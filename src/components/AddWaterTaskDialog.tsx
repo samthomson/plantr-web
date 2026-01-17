@@ -17,7 +17,6 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/useToast';
 import { Droplet } from 'lucide-react';
 import { extractTasks } from '@/lib/plantUtils';
-import { nip19 } from 'nostr-tools';
 import { NSecSigner } from '@nostrify/nostrify';
 
 interface AddWaterTaskDialogProps {
@@ -67,18 +66,17 @@ export function AddWaterTaskDialog({ plantPotIdentifier }: AddWaterTaskDialogPro
     setIsPending(true);
 
     try {
-      // Decrypt the plant pot's nsec
-      const encryptedNsec = plantPot.content;
-      const decryptedNsec = await user.signer.nip44.decrypt(user.pubkey, encryptedNsec);
+      // Decrypt the plant pot's secret key (hex format)
+      const encryptedSecretKey = plantPot.content;
+      const decryptedSecretKeyHex = await user.signer.nip44.decrypt(user.pubkey, encryptedSecretKey);
 
-      // Decode nsec to get secret key
-      const { type, data: secretKey } = nip19.decode(decryptedNsec);
-      if (type !== 'nsec') {
-        throw new Error('Invalid nsec format');
-      }
+      // Convert hex string to Uint8Array
+      const secretKey = new Uint8Array(
+        decryptedSecretKeyHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16))
+      );
 
       // Create signer from plant pot's secret key
-      const plantPotSigner = new NSecSigner(secretKey as Uint8Array);
+      const plantPotSigner = new NSecSigner(secretKey);
 
       // Get existing tasks
       const existingTasks = extractTasks(plantPot);
@@ -99,7 +97,7 @@ export function AddWaterTaskDialog({ plantPotIdentifier }: AddWaterTaskDialogPro
 
       const unsignedEvent = {
         kind: 30000,
-        content: encryptedNsec, // Keep the encrypted nsec in content
+        content: encryptedSecretKey, // Keep the encrypted hex secret key in content
         tags,
         created_at: Math.floor(Date.now() / 1000),
         pubkey: plantPot.pubkey, // Use plant pot's pubkey

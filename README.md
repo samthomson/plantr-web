@@ -33,16 +33,16 @@ Replaceable event that stores plant pot information and pending tasks. Each plan
     ["p", "<owner-pubkey>"],
     ["task", "water", "30"]
   ],
-  "content": "<encrypted-nsec>"
+  "content": "<encrypted-hex-private-key>"
 }
 ```
 
 **Important Security Design:**
 - Each plant pot generates its own keypair on creation
-- The plant pot's **private key (nsec)** is encrypted to the owner's pubkey using NIP-44
+- The plant pot's **private key (hex format)** is encrypted to the owner's pubkey using NIP-44
 - All plant pot updates are signed with the plant pot's key, not the owner's key
 - This allows sharing the plant pot's private key with IoT devices without risking the owner's main identity
-- The owner can decrypt and view the nsec through the UI
+- The owner can decrypt and view the hex private key through the UI
 
 ### Log (Kind 30001)
 Replaceable event that records completed tasks:
@@ -61,10 +61,10 @@ Replaceable event that records completed tasks:
 ## IoT Device Setup
 
 1. **Get Plant Pot ID**: Copy the naddr identifier from the plant pot detail page
-2. **Get Private Key**: Click "Decrypt" to reveal the plant pot's nsec, then copy it
+2. **Get Private Key**: Click "Decrypt" to reveal the plant pot's private key (64-character hex string), then copy it
 3. **Configure Relay**: Connect to `wss://relay.samt.st`
 4. **Watch for Updates**: Subscribe to plant pot events using the naddr identifier
-5. **Sign with Plant Pot Key**: Use the decrypted nsec to sign all events as the plant pot identity
+5. **Sign with Plant Pot Key**: Use the decrypted hex private key to sign all events as the plant pot identity
 6. **Complete Tasks**: When a task is completed, publish a log event (kind 30001)
 7. **Update Plant Pot**: Remove completed tasks from the plant pot event and sign with the plant pot's key
 

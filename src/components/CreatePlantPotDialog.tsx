@@ -55,11 +55,15 @@ export function CreatePlantPotDialog() {
       const plantPotSecretKey = generateSecretKey();
       const plantPotSigner = new NSecSigner(plantPotSecretKey);
       const plantPotPubkey = await plantPotSigner.getPublicKey();
-      const plantPotNsec = nip19.nsecEncode(plantPotSecretKey);
 
-      console.log('Generated plant pot keypair:', { plantPotPubkey, nsec: plantPotNsec });
+      // Convert secret key to hex string
+      const plantPotSecretKeyHex = Array.from(plantPotSecretKey)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
 
-      // Encrypt the nsec to the logged-in user's pubkey
+      console.log('Generated plant pot keypair:', { plantPotPubkey, secretKeyHex: plantPotSecretKeyHex });
+
+      // Encrypt the hex secret key to the logged-in user's pubkey
       if (!user.signer.nip44) {
         toast({
           title: 'Error',
@@ -70,13 +74,13 @@ export function CreatePlantPotDialog() {
         return;
       }
 
-      const encryptedNsec = await user.signer.nip44.encrypt(user.pubkey, plantPotNsec);
-      console.log('Encrypted nsec:', encryptedNsec);
+      const encryptedSecretKey = await user.signer.nip44.encrypt(user.pubkey, plantPotSecretKeyHex);
+      console.log('Encrypted secret key:', encryptedSecretKey);
 
       // Create the plant pot event signed by the PLANT POT's keypair
       const unsignedEvent = {
         kind: 30000,
-        content: encryptedNsec, // Encrypted nsec
+        content: encryptedSecretKey, // Encrypted hex secret key
         tags: [
           ['d', identifier.trim()],
           ['p', user.pubkey], // Owner's pubkey

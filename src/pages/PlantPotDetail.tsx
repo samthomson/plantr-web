@@ -84,7 +84,7 @@ export function PlantPotDetail() {
       }
 
       const decrypted = await user.signer.nip44.decrypt(user.pubkey, plantPot.content);
-      console.log('Decrypted nsec:', decrypted);
+      console.log('Decrypted secret key (hex):', decrypted);
       setDecryptedNsec(decrypted);
       toast({
         title: 'Decrypted!',
@@ -109,7 +109,7 @@ export function PlantPotDetail() {
       await navigator.clipboard.writeText(decryptedNsec);
       toast({
         title: 'Copied!',
-        description: 'Private key copied to clipboard',
+        description: 'Private key (hex) copied to clipboard',
       });
     } catch (error) {
       toast({
@@ -252,12 +252,12 @@ export function PlantPotDetail() {
                     </div>
                   </div>
 
-                  {/* Display encrypted/decrypted nsec */}
+                  {/* Display encrypted/decrypted private key */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium flex items-center gap-2">
                         <Lock className="h-4 w-4" />
-                        IoT Private Key (nsec)
+                        IoT Private Key (hex)
                       </span>
                       {!decryptedNsec ? (
                         <Button
