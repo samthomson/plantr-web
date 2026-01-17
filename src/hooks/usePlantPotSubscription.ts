@@ -16,8 +16,10 @@ export function usePlantPotSubscription() {
   useEffect(() => {
     if (!user?.pubkey) return;
 
+    const controller = new AbortController();
+
     // Subscribe to plant pot events (kind 30000) for the current user
-    const plantPotSub = nostr.req(
+    nostr.req(
       [
         {
           kinds: [30000],
@@ -25,10 +27,11 @@ export function usePlantPotSubscription() {
         },
       ],
       {
+        signal: controller.signal,
         onevent(event: NostrEvent) {
           // Invalidate plant pots query to refetch
           queryClient.invalidateQueries({ queryKey: ['plant-pots', user.pubkey] });
-          
+
           // Also invalidate specific plant pot query
           const identifier = event.tags.find(([name]) => name === 'd')?.[1];
           if (identifier) {
@@ -39,7 +42,7 @@ export function usePlantPotSubscription() {
     );
 
     // Subscribe to plant log events (kind 30001)
-    const plantLogSub = nostr.req(
+    nostr.req(
       [
         {
           kinds: [30001],
@@ -47,6 +50,7 @@ export function usePlantPotSubscription() {
         },
       ],
       {
+        signal: controller.signal,
         onevent(event: NostrEvent) {
           // Extract plant pot identifier from the 'a' tag
           const aTag = event.tags.find(([name]) => name === 'a')?.[1];
@@ -55,8 +59,8 @@ export function usePlantPotSubscription() {
             if (parts.length === 3) {
               const plantPotIdentifier = parts[2];
               // Invalidate logs query for this specific plant pot
-              queryClient.invalidateQueries({ 
-                queryKey: ['plant-logs', user.pubkey, plantPotIdentifier] 
+              queryClient.invalidateQueries({
+                queryKey: ['plant-logs', user.pubkey, plantPotIdentifier]
               });
             }
           }
@@ -66,8 +70,7 @@ export function usePlantPotSubscription() {
 
     // Cleanup subscriptions on unmount
     return () => {
-      plantPotSub.close();
-      plantLogSub.close();
+      controller.abort();
     };
   }, [nostr, user?.pubkey, queryClient]);
 }

@@ -36,12 +36,17 @@ export function PlantPotDetail() {
     description: 'Manage your plant pot and view watering logs',
   });
 
-  const handleCopyNaddr = () => {
-    if (!plantPot) return;
+  const handleCopyNaddr = async () => {
+    if (!plantPot) {
+      console.error('No plant pot data available');
+      return;
+    }
 
     try {
       const naddr = generatePlantPotNaddr(plantPot, ['wss://relay.samt.st']);
-      navigator.clipboard.writeText(naddr);
+      console.log('Generated naddr:', naddr);
+
+      await navigator.clipboard.writeText(naddr);
       setCopied(true);
       toast({
         title: 'Copied!',
@@ -49,9 +54,10 @@ export function PlantPotDetail() {
       });
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
+      console.error('Copy error:', error);
       toast({
         title: 'Error',
-        description: 'Failed to copy identifier',
+        description: error instanceof Error ? error.message : 'Failed to copy identifier',
         variant: 'destructive',
       });
     }
