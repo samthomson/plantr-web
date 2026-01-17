@@ -154,34 +154,44 @@ export function PlantPotDetail() {
           <div className="lg:col-span-2 space-y-6">
             <Card className="border-2 border-green-200 dark:border-green-800">
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 rounded-full bg-green-100 dark:bg-green-900">
-                      <Sprout className="h-6 w-6 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-2xl">{identifier}</CardTitle>
-                      <CardDescription>Plant Pot</CardDescription>
-                    </div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-3 rounded-full bg-green-100 dark:bg-green-900">
+                    <Sprout className="h-6 w-6 text-green-600 dark:text-green-400" />
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCopyNaddr}
-                    className="gap-2"
-                  >
-                    {copied ? (
-                      <>
-                        <CheckCheck className="h-4 w-4" />
-                        Copied
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-4 w-4" />
-                        Copy ID
-                      </>
-                    )}
-                  </Button>
+                  <div>
+                    <CardTitle className="text-2xl">{identifier}</CardTitle>
+                    <CardDescription>Plant Pot</CardDescription>
+                  </div>
+                </div>
+
+                {/* Display naddr ID */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Replaceable Event ID</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCopyNaddr}
+                      className="gap-2 h-8"
+                    >
+                      {copied ? (
+                        <>
+                          <CheckCheck className="h-4 w-4" />
+                          Copied
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4" />
+                          Copy
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted border">
+                    <code className="text-xs break-all">
+                      {generatePlantPotNaddr(plantPot, ['wss://relay.samt.st'])}
+                    </code>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -284,14 +294,17 @@ export function PlantPotDetail() {
               <CardContent className="space-y-4">
                 <div>
                   <p className="text-sm text-muted-foreground mb-2">
-                    Use the <strong>Copy ID</strong> button above to get the naddr identifier
-                    for your IoT device configuration.
+                    Use the <strong>Replaceable Event ID</strong> displayed above to configure
+                    your IoT device. Click <strong>Copy</strong> to copy it to your clipboard.
                   </p>
                 </div>
-                <div className="p-3 rounded-lg bg-muted">
-                  <p className="text-xs font-mono break-all">
-                    Relay: wss://relay.samt.st
-                  </p>
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold">Relay Configuration</p>
+                  <div className="p-3 rounded-lg bg-muted border">
+                    <p className="text-xs font-mono break-all">
+                      wss://relay.samt.st
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
