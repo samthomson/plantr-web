@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useNostrPublish } from '@/hooks/useNostrPublish';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { usePlantPot } from '@/hooks/usePlantPots';
+import { useNostr } from '@nostrify/react';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/useToast';
 import { Droplet } from 'lucide-react';
 import { extractTasks } from '@/lib/plantUtils';
+import { nip19 } from 'nostr-tools';
+import { NSecSigner } from '@nostrify/nostrify';
 
 interface AddWaterTaskDialogProps {
   plantPotIdentifier: string;
@@ -24,11 +27,13 @@ interface AddWaterTaskDialogProps {
 export function AddWaterTaskDialog({ plantPotIdentifier }: AddWaterTaskDialogProps) {
   const [open, setOpen] = useState(false);
   const [seconds, setSeconds] = useState('30');
+  const [isPending, setIsPending] = useState(false);
   const { data: plantPot } = usePlantPot(plantPotIdentifier);
-  const { mutate: createEvent, isPending } = useNostrPublish();
+  const { user } = useCurrentUser();
+  const { nostr } = useNostr();
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const secondsNum = parseInt(seconds);
@@ -50,42 +55,78 @@ export function AddWaterTaskDialog({ plantPotIdentifier }: AddWaterTaskDialogPro
       return;
     }
 
-    // Get existing tasks
-    const existingTasks = extractTasks(plantPot);
+    if (!user?.signer?.nip44) {
+      toast({
+        title: 'Error',
+        description: 'Signer not available or does not support NIP-44',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-    // Add new water task
-    const newTasks = [...existingTasks, { type: 'water', seconds: seconds.trim() }];
+    setIsPending(true);
 
-    // Create updated plant pot event with all tasks
-    const tags: string[][] = [
-      ['d', plantPotIdentifier],
-      ...newTasks.map(task => ['task', task.type, task.seconds]),
-    ];
+    try {
+      // Decrypt the plant pot's nsec
+      const encryptedNsec = plantPot.content;
+      const decryptedNsec = await user.signer.nip44.decrypt(user.pubkey, encryptedNsec);
 
-    createEvent(
-      {
-        kind: 30000,
-        content: '',
-        tags,
-      },
-      {
-        onSuccess: () => {
-          toast({
-            title: 'Success',
-            description: 'Water task added successfully!',
-          });
-          setOpen(false);
-          setSeconds('30');
-        },
-        onError: (error) => {
-          toast({
-            title: 'Error',
-            description: `Failed to add water task: ${error.message}`,
-            variant: 'destructive',
-          });
-        },
+      // Decode nsec to get secret key
+      const { type, data: secretKey } = nip19.decode(decryptedNsec);
+      if (type !== 'nsec') {
+        throw new Error('Invalid nsec format');
       }
-    );
+
+      // Create signer from plant pot's secret key
+      const plantPotSigner = new NSecSigner(secretKey as Uint8Array);
+
+      // Get existing tasks
+      const existingTasks = extractTasks(plantPot);
+
+      // Add new water task
+      const newTasks = [...existingTasks, { type: 'water', seconds: seconds.trim() }];
+
+      // Get owner pubkey from p tag
+      const ownerPubkey = plantPot.tags.find(([name]) => name === 'p')?.[1];
+
+      // Create updated plant pot event with all tasks
+      const tags: string[][] = [
+        ['d', plantPotIdentifier],
+        ['p', ownerPubkey || user.pubkey],
+        ['client', window.location.hostname],
+        ...newTasks.map(task => ['task', task.type, task.seconds]),
+      ];
+
+      const unsignedEvent = {
+        kind: 30000,
+        content: encryptedNsec, // Keep the encrypted nsec in content
+        tags,
+        created_at: Math.floor(Date.now() / 1000),
+        pubkey: plantPot.pubkey, // Use plant pot's pubkey
+      };
+
+      // Sign with plant pot's signer
+      const signedEvent = await plantPotSigner.signEvent(unsignedEvent);
+
+      // Publish the event
+      await nostr.event(signedEvent, { pow: 0 });
+
+      toast({
+        title: 'Success',
+        description: 'Water task added successfully!',
+      });
+      setOpen(false);
+      setSeconds('30');
+    } catch (error) {
+      console.error('Failed to add water task:', error);
+      toast({
+        title: 'Error',
+        description: `Failed to add water task: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsPending(false);
+    }
   };
 
   return (

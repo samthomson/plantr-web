@@ -18,7 +18,10 @@ import {
   Copy,
   CheckCheck,
   Calendar,
-  Clock
+  Clock,
+  Eye,
+  EyeOff,
+  Lock
 } from 'lucide-react';
 import { extractTasks, formatDuration, formatRelativeTime, generatePlantPotNaddr } from '@/lib/plantUtils';
 import { useState } from 'react';
@@ -30,6 +33,9 @@ export function PlantPotDetail() {
   const { toast } = useToast();
   const { user } = useCurrentUser();
   const [copied, setCopied] = useState(false);
+  const [decryptedNsec, setDecryptedNsec] = useState<string | null>(null);
+  const [isDecrypting, setIsDecrypting] = useState(false);
+  const [showNsec, setShowNsec] = useState(false);
 
   useSeoMeta({
     title: `Plant Pot: ${identifier || 'Loading...'}`,
@@ -58,6 +64,57 @@ export function PlantPotDetail() {
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to copy identifier',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDecryptNsec = async () => {
+    if (!plantPot || !user?.signer) return;
+
+    setIsDecrypting(true);
+    try {
+      if (!user.signer.nip44) {
+        toast({
+          title: 'Error',
+          description: 'Please upgrade your signer extension to support NIP-44 encryption',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const decrypted = await user.signer.nip44.decrypt(user.pubkey, plantPot.content);
+      console.log('Decrypted nsec:', decrypted);
+      setDecryptedNsec(decrypted);
+      toast({
+        title: 'Decrypted!',
+        description: 'Private key decrypted successfully',
+      });
+    } catch (error) {
+      console.error('Decryption error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to decrypt private key',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDecrypting(false);
+    }
+  };
+
+  const handleCopyNsec = async () => {
+    if (!decryptedNsec) return;
+
+    try {
+      await navigator.clipboard.writeText(decryptedNsec);
+      toast({
+        title: 'Copied!',
+        description: 'Private key copied to clipboard',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to copy private key',
         variant: 'destructive',
       });
     }
@@ -165,32 +222,99 @@ export function PlantPotDetail() {
                 </div>
 
                 {/* Display naddr ID */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Replaceable Event ID</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleCopyNaddr}
-                      className="gap-2 h-8"
-                    >
-                      {copied ? (
-                        <>
-                          <CheckCheck className="h-4 w-4" />
-                          Copied
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-4 w-4" />
-                          Copy
-                        </>
-                      )}
-                    </Button>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Replaceable Event ID (naddr)</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleCopyNaddr}
+                        className="gap-2 h-8"
+                      >
+                        {copied ? (
+                          <>
+                            <CheckCheck className="h-4 w-4" />
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-4 w-4" />
+                            Copy
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted border">
+                      <code className="text-xs break-all">
+                        {generatePlantPotNaddr(plantPot, ['wss://relay.samt.st'])}
+                      </code>
+                    </div>
                   </div>
-                  <div className="p-3 rounded-lg bg-muted border">
-                    <code className="text-xs break-all">
-                      {generatePlantPotNaddr(plantPot, ['wss://relay.samt.st'])}
-                    </code>
+
+                  {/* Display encrypted/decrypted nsec */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium flex items-center gap-2">
+                        <Lock className="h-4 w-4" />
+                        IoT Private Key (nsec)
+                      </span>
+                      {!decryptedNsec ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleDecryptNsec}
+                          disabled={isDecrypting}
+                          className="gap-2 h-8"
+                        >
+                          <Eye className="h-4 w-4" />
+                          {isDecrypting ? 'Decrypting...' : 'Decrypt'}
+                        </Button>
+                      ) : (
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowNsec(!showNsec)}
+                            className="gap-2 h-8"
+                          >
+                            {showNsec ? (
+                              <>
+                                <EyeOff className="h-4 w-4" />
+                                Hide
+                              </>
+                            ) : (
+                              <>
+                                <Eye className="h-4 w-4" />
+                                Show
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleCopyNsec}
+                            className="gap-2 h-8"
+                          >
+                            <Copy className="h-4 w-4" />
+                            Copy
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted border">
+                      <code className="text-xs break-all">
+                        {!decryptedNsec ? (
+                          <span className="text-muted-foreground">
+                            {plantPot.content.substring(0, 50)}...{plantPot.content.substring(plantPot.content.length - 10)} (encrypted)
+                          </span>
+                        ) : showNsec ? (
+                          <span className="font-mono">{decryptedNsec}</span>
+                        ) : (
+                          <span className="text-muted-foreground">••••••••••••••••••••••••••••••••</span>
+                        )}
+                      </code>
+                    </div>
                   </div>
                 </div>
               </CardHeader>

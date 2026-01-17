@@ -17,7 +17,7 @@ function validatePlantPot(event: NostrEvent): boolean {
 }
 
 /**
- * Hook to fetch all plant pots for the current user
+ * Hook to fetch all plant pots for the current user (by owner p tag)
  */
 export function usePlantPots() {
   const { nostr } = useNostr();
@@ -33,7 +33,7 @@ export function usePlantPots() {
         [
           {
             kinds: [30000],
-            authors: [user.pubkey],
+            '#p': [user.pubkey], // Query by owner pubkey
           },
         ],
         { signal }
@@ -62,7 +62,7 @@ export function usePlantPot(identifier: string | undefined) {
         [
           {
             kinds: [30000],
-            authors: [user.pubkey],
+            '#p': [user.pubkey], // Query by owner pubkey
             '#d': [identifier],
           },
         ],

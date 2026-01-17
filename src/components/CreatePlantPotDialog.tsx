@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useNostrPublish } from '@/hooks/useNostrPublish';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useNostr } from '@nostrify/react';
 import {
   Dialog,
   DialogContent,
@@ -14,14 +15,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/useToast';
 import { Plus } from 'lucide-react';
+import { generateSecretKey } from 'nostr-tools';
+import { nip19 } from 'nostr-tools';
+import { NSecSigner } from '@nostrify/nostrify';
 
 export function CreatePlantPotDialog() {
   const [open, setOpen] = useState(false);
   const [identifier, setIdentifier] = useState('');
-  const { mutate: createEvent, isPending } = useNostrPublish();
+  const [isPending, setIsPending] = useState(false);
+  const { user } = useCurrentUser();
+  const { nostr } = useNostr();
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!identifier.trim()) {
@@ -33,30 +39,76 @@ export function CreatePlantPotDialog() {
       return;
     }
 
-    createEvent(
-      {
-        kind: 30000,
-        content: '',
-        tags: [['d', identifier.trim()]],
-      },
-      {
-        onSuccess: () => {
-          toast({
-            title: 'Success',
-            description: 'Plant pot created successfully!',
-          });
-          setOpen(false);
-          setIdentifier('');
-        },
-        onError: (error) => {
-          toast({
-            title: 'Error',
-            description: `Failed to create plant pot: ${error.message}`,
-            variant: 'destructive',
-          });
-        },
+    if (!user?.signer) {
+      toast({
+        title: 'Error',
+        description: 'User signer not available',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsPending(true);
+
+    try {
+      // Generate new keypair for this plant pot
+      const plantPotSecretKey = generateSecretKey();
+      const plantPotSigner = new NSecSigner(plantPotSecretKey);
+      const plantPotPubkey = await plantPotSigner.getPublicKey();
+      const plantPotNsec = nip19.nsecEncode(plantPotSecretKey);
+
+      console.log('Generated plant pot keypair:', { plantPotPubkey, nsec: plantPotNsec });
+
+      // Encrypt the nsec to the logged-in user's pubkey
+      if (!user.signer.nip44) {
+        toast({
+          title: 'Error',
+          description: 'Please upgrade your signer extension to support NIP-44 encryption',
+          variant: 'destructive',
+        });
+        setIsPending(false);
+        return;
       }
-    );
+
+      const encryptedNsec = await user.signer.nip44.encrypt(user.pubkey, plantPotNsec);
+      console.log('Encrypted nsec:', encryptedNsec);
+
+      // Create the plant pot event signed by the PLANT POT's keypair
+      const unsignedEvent = {
+        kind: 30000,
+        content: encryptedNsec, // Encrypted nsec
+        tags: [
+          ['d', identifier.trim()],
+          ['p', user.pubkey], // Owner's pubkey
+          ['client', window.location.hostname],
+        ],
+        created_at: Math.floor(Date.now() / 1000),
+        pubkey: plantPotPubkey, // Event is authored by the plant pot itself
+      };
+
+      // Sign with plant pot's signer
+      const signedEvent = await plantPotSigner.signEvent(unsignedEvent);
+      console.log('Signed plant pot event:', signedEvent);
+
+      // Publish the event
+      await nostr.event(signedEvent, { pow: 0 });
+
+      toast({
+        title: 'Success',
+        description: 'Plant pot created successfully!',
+      });
+      setOpen(false);
+      setIdentifier('');
+    } catch (error) {
+      console.error('Failed to create plant pot:', error);
+      toast({
+        title: 'Error',
+        description: `Failed to create plant pot: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsPending(false);
+    }
   };
 
   return (

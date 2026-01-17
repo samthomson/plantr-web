@@ -18,12 +18,12 @@ export function usePlantPotSubscription() {
 
     const controller = new AbortController();
 
-    // Subscribe to plant pot events (kind 30000) for the current user
+    // Subscribe to plant pot events (kind 30000) for the current user (by owner p tag)
     nostr.req(
       [
         {
           kinds: [30000],
-          authors: [user.pubkey],
+          '#p': [user.pubkey], // Subscribe by owner pubkey
         },
       ],
       {
