@@ -30,10 +30,13 @@ export function usePlantLogs(plantPotIdentifier: string | undefined) {
       if (!user?.pubkey || !plantPotIdentifier) return [];
 
       const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
-      
+
+      // Connect to only the custom relay
+      const relay = nostr.relay('wss://relay.samt.st');
+
       // Query logs that reference this specific plant pot
       const aTag = `30000:${user.pubkey}:${plantPotIdentifier}`;
-      const events = await nostr.query(
+      const events = await relay.query(
         [
           {
             kinds: [30001],

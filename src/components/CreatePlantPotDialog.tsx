@@ -90,8 +90,9 @@ export function CreatePlantPotDialog() {
       const signedEvent = await plantPotSigner.signEvent(unsignedEvent);
       console.log('Signed plant pot event:', signedEvent);
 
-      // Publish the event
-      await nostr.event(signedEvent, { pow: 0 });
+      // Publish to only the custom relay
+      const relay = nostr.relay('wss://relay.samt.st');
+      await relay.event(signedEvent, { pow: 0 });
 
       toast({
         title: 'Success',

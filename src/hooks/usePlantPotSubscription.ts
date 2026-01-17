@@ -18,8 +18,11 @@ export function usePlantPotSubscription() {
 
     const controller = new AbortController();
 
+    // Connect to only the custom relay
+    const relay = nostr.relay('wss://relay.samt.st');
+
     // Subscribe to plant pot events (kind 30000) for the current user (by owner p tag)
-    nostr.req(
+    relay.req(
       [
         {
           kinds: [30000],
@@ -42,7 +45,7 @@ export function usePlantPotSubscription() {
     );
 
     // Subscribe to plant log events (kind 30001)
-    nostr.req(
+    relay.req(
       [
         {
           kinds: [30001],

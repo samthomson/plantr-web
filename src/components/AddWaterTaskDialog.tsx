@@ -108,8 +108,9 @@ export function AddWaterTaskDialog({ plantPotIdentifier }: AddWaterTaskDialogPro
       // Sign with plant pot's signer
       const signedEvent = await plantPotSigner.signEvent(unsignedEvent);
 
-      // Publish the event
-      await nostr.event(signedEvent, { pow: 0 });
+      // Publish to only the custom relay
+      const relay = nostr.relay('wss://relay.samt.st');
+      await relay.event(signedEvent, { pow: 0 });
 
       toast({
         title: 'Success',

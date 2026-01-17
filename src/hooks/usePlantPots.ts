@@ -5,13 +5,24 @@ import type { NostrEvent } from '@nostrify/nostrify';
 
 /**
  * Validator function for plant pot events (kind 30000)
+ * Plant pots must have:
+ * - d tag (identifier)
+ * - p tag (owner pubkey)
+ * - content (encrypted nsec)
  */
 function validatePlantPot(event: NostrEvent): boolean {
   if (event.kind !== 30000) return false;
 
-  // Check for required 'd' tag
+  // Check for required 'd' tag (identifier)
   const d = event.tags.find(([name]) => name === 'd')?.[1];
   if (!d) return false;
+
+  // Check for required 'p' tag (owner pubkey) - this distinguishes plant pots from other kind 30000 events
+  const p = event.tags.find(([name]) => name === 'p')?.[1];
+  if (!p) return false;
+
+  // Check for content (encrypted nsec) - plant pots must have encrypted content
+  if (!event.content || event.content.length === 0) return false;
 
   return true;
 }
@@ -29,7 +40,10 @@ export function usePlantPots() {
       if (!user?.pubkey) return [];
 
       const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
-      const events = await nostr.query(
+
+      // Connect to only the custom relay
+      const relay = nostr.relay('wss://relay.samt.st');
+      const events = await relay.query(
         [
           {
             kinds: [30000],
@@ -58,7 +72,10 @@ export function usePlantPot(identifier: string | undefined) {
       if (!user?.pubkey || !identifier) return null;
 
       const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
-      const events = await nostr.query(
+
+      // Connect to only the custom relay
+      const relay = nostr.relay('wss://relay.samt.st');
+      const events = await relay.query(
         [
           {
             kinds: [30000],
