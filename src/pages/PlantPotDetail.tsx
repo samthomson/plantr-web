@@ -74,33 +74,20 @@ export function PlantPotDetail() {
     setIsDecrypting(true);
     try {
       const decrypted = await user.signer.nip44.decrypt(user.pubkey, plantPot.content);
-      console.log('Raw decrypted value:', decrypted);
-      console.log('Decrypted length:', decrypted.length);
-      console.log('Decrypted type:', typeof decrypted);
+      console.log('Decrypted value:', decrypted);
+      console.log('Length:', decrypted.length);
       
-      // Validate it's actually hex (64 characters, 0-9a-f only)
-      if (/^[0-9a-fA-F]{64}$/.test(decrypted)) {
-        console.log('Valid 64-char hex detected');
-        setDecryptedHex(decrypted.toLowerCase());
-      } else if (decrypted.startsWith('nsec1')) {
-        console.log('nsec detected, decoding to hex');
-        const decoded = nip19.decode(decrypted);
-        // decoded.data is Uint8Array, convert to hex string
-        const bytes = decoded.data as Uint8Array;
-        const hexString = Array.from(bytes)
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('');
-        console.log('Converted to hex:', hexString, 'length:', hexString.length);
-        setDecryptedHex(hexString);
-      } else {
-        console.error('Invalid decrypted format - not hex or nsec:', decrypted);
+      // Should always be 64-char hex
+      if (!/^[0-9a-fA-F]{64}$/.test(decrypted)) {
         toast({
           title: 'Error',
-          description: `Invalid key format (${decrypted.length} chars). Expected 64-char hex or nsec.`,
+          description: `Invalid private key format. Expected 64 hex characters, got ${decrypted.length}.`,
           variant: 'destructive',
         });
         return;
       }
+      
+      setDecryptedHex(decrypted.toLowerCase());
     } catch (error) {
       console.error('Decryption error:', error);
       toast({
