@@ -26,6 +26,7 @@ import {
 import { extractTasks, formatDuration, formatRelativeTime, generatePlantPotNaddr } from '@/lib/plantUtils';
 import { useState } from 'react';
 import { nip19 } from 'nostr-tools';
+import { hexToBytes } from '@noble/hashes/utils';
 
 export function PlantPotDetail() {
   const { identifier } = useParams<{ identifier: string }>();
@@ -125,7 +126,7 @@ export function PlantPotDetail() {
     if (!decryptedHex) return;
 
     try {
-      const nsec = nip19.nsecEncode(decryptedHex);
+      const nsec = nip19.nsecEncode(hexToBytes(decryptedHex));
       await navigator.clipboard.writeText(nsec);
       toast({
         title: 'Copied!',
@@ -362,7 +363,7 @@ export function PlantPotDetail() {
                           <div className="p-3 rounded-lg bg-muted border">
                             <code className="text-xs break-all">
                               {showKey ? (
-                                <span className="font-mono">{nip19.nsecEncode(decryptedHex)}</span>
+                                <span className="font-mono">{nip19.nsecEncode(hexToBytes(decryptedHex))}</span>
                               ) : (
                                 <span className="text-muted-foreground">••••••••••••••••••••••••••••••••</span>
                               )}
