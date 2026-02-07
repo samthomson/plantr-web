@@ -1,6 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { usePlantPot } from '@/hooks/usePlantPots';
 import { usePlantLogs } from '@/hooks/usePlantLogs';
+import { useNostr } from '@nostrify/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +24,10 @@ import {
   Clock,
   Eye,
   Lock,
-  RefreshCw
+  RefreshCw,
+  Pencil,
+  Check,
+  X
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { extractTasks, formatDuration, formatRelativeTime, generatePlantPotNaddr } from '@/lib/plantUtils';
@@ -36,11 +40,14 @@ export function PlantPotDetail() {
   const { data: logs, isLoading: isLogsLoading, refetch: refetchLogs } = usePlantLogs(plantPot?.pubkey, identifier);
   const { toast } = useToast();
   const { user } = useCurrentUser();
+  const { nostr } = useNostr();
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
   const [decryptedHex, setDecryptedHex] = useState<string | null>(null);
   const [isDecrypting, setIsDecrypting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
 
   useSeoMeta({
     title: `Plant Pot: ${identifier || 'Loading...'}`,
@@ -142,6 +149,61 @@ export function PlantPotDetail() {
     }
   };
 
+  const handleSaveName = async () => {
+    if (!plantPot || !user?.signer || !editedName.trim()) return;
+
+    try {
+      // Decrypt plant pot's private key
+      const decryptedKey = await user.signer.nip44.decrypt(user.pubkey, plantPot.content);
+      const hexKey = /^[0-9a-fA-F]{64}$/.test(decryptedKey) ? decryptedKey : '';
+      
+      if (!hexKey) {
+        toast({
+          title: 'Error',
+          description: 'Cannot update name - plant pot has no valid private key',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Convert hex to Uint8Array and create signer
+      const secretKey = new Uint8Array(hexKey.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
+      const { NSecSigner } = await import('@nostrify/nostrify');
+      const signer = new NSecSigner(secretKey);
+
+      // Update event with new name
+      const updatedTags = plantPot.tags.filter(([t]) => t !== 'name');
+      updatedTags.splice(1, 0, ['name', editedName.trim()]);
+
+      const unsignedEvent = {
+        kind: 30000,
+        content: plantPot.content,
+        tags: updatedTags,
+        created_at: Math.floor(Date.now() / 1000),
+        pubkey: plantPot.pubkey,
+      };
+
+      const signedEvent = await signer.signEvent(unsignedEvent);
+      const relay = nostr.relay('wss://relay.samt.st');
+      await relay.event(signedEvent, { pow: 0 });
+
+      queryClient.invalidateQueries({ queryKey: ['plant-pot', user.pubkey, identifier] });
+      queryClient.invalidateQueries({ queryKey: ['plant-pots', user.pubkey] });
+
+      setIsEditingName(false);
+      toast({
+        title: 'Updated',
+        description: 'Plant pot name updated',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update name',
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
@@ -216,14 +278,14 @@ export function PlantPotDetail() {
   const tasks = extractTasks(plantPot);
   const name = plantPot.tags.find(([name]) => name === 'name')?.[1] || identifier;
 
-  // Auto-refresh every 3 seconds when tasks exist
+  // Auto-refresh every 1 second when tasks exist
   useEffect(() => {
     if (tasks.length === 0) return;
 
     const interval = setInterval(() => {
       refetchPot();
       refetchLogs();
-    }, 3000);
+    }, 1000);
 
     return () => clearInterval(interval);
   }, [tasks.length, refetchPot, refetchLogs]);
@@ -262,8 +324,42 @@ export function PlantPotDetail() {
                   <div className="p-3 rounded-full bg-green-100 dark:bg-green-900">
                     <Sprout className="h-6 w-6 text-green-600 dark:text-green-400" />
                   </div>
-                  <div>
-                    <CardTitle className="text-2xl">{name}</CardTitle>
+                  <div className="flex-1">
+                    {isEditingName ? (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={editedName}
+                          onChange={(e) => setEditedName(e.target.value)}
+                          className="text-xl font-semibold h-10"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveName();
+                            if (e.key === 'Escape') setIsEditingName(false);
+                          }}
+                        />
+                        <Button size="sm" variant="ghost" onClick={handleSaveName}>
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setIsEditingName(false)}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-2xl">{name}</CardTitle>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setEditedName(name);
+                            setIsEditingName(true);
+                          }}
+                          className="h-7 w-7 p-0"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
                     <CardDescription>Plant Pot • {identifier}</CardDescription>
                   </div>
                 </div>
@@ -299,39 +395,65 @@ export function PlantPotDetail() {
                     </div>
                   </div>
 
+                  {/* Configuration fields */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Relay URL</Label>
+                    <Input
+                      value="wss://relay.samt.st"
+                      readOnly
+                      disabled
+                      className="font-mono text-xs h-9"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Plant Pot Pubkey</Label>
+                    <Input
+                      value={plantPot.pubkey}
+                      readOnly
+                      disabled
+                      className="font-mono text-xs h-9"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Identifier (d-tag)</Label>
+                    <Input
+                      value={identifier}
+                      readOnly
+                      disabled
+                      className="font-mono text-xs h-9"
+                    />
+                  </div>
+
                   {/* Display encrypted/decrypted private key */}
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium flex items-center gap-2">
-                        <Lock className="h-4 w-4" />
+                      <Label className="text-xs text-muted-foreground flex items-center gap-2">
+                        <Lock className="h-3 w-3" />
                         IoT Private Key
-                      </span>
+                      </Label>
                       {!decryptedHex && (
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={handleDecryptKey}
                           disabled={isDecrypting}
-                          className="gap-2 h-8"
+                          className="gap-2 h-7 text-xs"
                         >
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-3 w-3" />
                           {isDecrypting ? 'Decrypting...' : 'Decrypt'}
                         </Button>
                       )}
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 p-3 rounded-lg bg-muted border">
-                        <code className="text-xs break-all font-mono">
-                          {!decryptedHex ? (
-                            <span className="text-muted-foreground">
-                              {plantPot.content.substring(0, 50)}...{plantPot.content.substring(plantPot.content.length - 10)} (encrypted)
-                            </span>
-                          ) : (
-                            decryptedHex
-                          )}
-                        </code>
-                      </div>
+                      <Input
+                        value={!decryptedHex ? '••••••••••••••••••••••••' : decryptedHex}
+                        readOnly
+                        disabled={!decryptedHex}
+                        className="font-mono text-xs h-9"
+                      />
                       {decryptedHex && (
                         <Button
                           variant="outline"
@@ -340,7 +462,6 @@ export function PlantPotDetail() {
                           className="gap-2"
                         >
                           <Copy className="h-4 w-4" />
-                          Copy
                         </Button>
                       )}
                     </div>
@@ -438,42 +559,8 @@ export function PlantPotDetail() {
             </Card>
           </div>
 
-          {/* Sidebar */}
+          {/* Sidebar - keep empty for future use */}
           <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Configuration</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Relay URL</Label>
-                  <Input
-                    value="wss://relay.samt.st"
-                    readOnly
-                    disabled
-                    className="font-mono text-xs"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Plant Pot Pubkey</Label>
-                  <Input
-                    value={plantPot.pubkey}
-                    readOnly
-                    disabled
-                    className="font-mono text-xs"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Identifier (d-tag)</Label>
-                  <Input
-                    value={identifier}
-                    readOnly
-                    disabled
-                    className="font-mono text-xs"
-                  />
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>
