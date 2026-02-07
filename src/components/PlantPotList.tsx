@@ -59,6 +59,12 @@ export function PlantPotList() {
                 <CardDescription>
                   {tasks.length > 0 ? `${tasks.length} pending task${tasks.length !== 1 ? 's' : ''}` : 'No tasks'}
                 </CardDescription>
+                {/* Debug info */}
+                <div className="text-xs text-muted-foreground mt-2 font-mono">
+                  <div>ID: {pot.id.substring(0, 8)}...</div>
+                  <div>Pubkey: {pot.pubkey.substring(0, 8)}...</div>
+                  <div>Created: {new Date(pot.created_at * 1000).toLocaleTimeString()}</div>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
