@@ -22,9 +22,6 @@ function validatePlantPot(event: NostrEvent): boolean {
   const p = event.tags.find(([name]) => name === 'p')?.[1];
   if (!p) return false;
 
-  // Check for content (encrypted nsec) - plant pots must have encrypted content
-  if (!event.content || event.content.length === 0) return false;
-
   return true;
 }
 
