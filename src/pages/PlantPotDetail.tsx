@@ -20,7 +20,6 @@ import {
   Calendar,
   Clock,
   Eye,
-  EyeOff,
   Lock
 } from 'lucide-react';
 import { extractTasks, formatDuration, formatRelativeTime, generatePlantPotNaddr } from '@/lib/plantUtils';
@@ -37,7 +36,6 @@ export function PlantPotDetail() {
   const [copied, setCopied] = useState(false);
   const [decryptedHex, setDecryptedHex] = useState<string | null>(null);
   const [isDecrypting, setIsDecrypting] = useState(false);
-  const [showKey, setShowKey] = useState(false);
 
   useSeoMeta({
     title: `Plant Pot: ${identifier || 'Loading...'}`,
@@ -86,8 +84,10 @@ export function PlantPotDetail() {
       }
 
       const decrypted = await user.signer.nip44.decrypt(user.pubkey, plantPot.content);
-      console.log('Decrypted secret key (hex):', decrypted);
-      setDecryptedHex(decrypted);
+      // Ensure the hex string is padded to 64 characters
+      const paddedHex = decrypted.padStart(64, '0');
+      console.log('Decrypted secret key (hex):', paddedHex);
+      setDecryptedHex(paddedHex);
       toast({
         title: 'Decrypted!',
         description: 'Private key decrypted successfully',
@@ -280,7 +280,7 @@ export function PlantPotDetail() {
                         <Lock className="h-4 w-4" />
                         IoT Private Key
                       </span>
-                      {!decryptedHex ? (
+                      {!decryptedHex && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -290,25 +290,6 @@ export function PlantPotDetail() {
                         >
                           <Eye className="h-4 w-4" />
                           {isDecrypting ? 'Decrypting...' : 'Decrypt'}
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setShowKey(!showKey)}
-                          className="gap-2 h-8"
-                        >
-                          {showKey ? (
-                            <>
-                              <EyeOff className="h-4 w-4" />
-                              Hide
-                            </>
-                          ) : (
-                            <>
-                              <Eye className="h-4 w-4" />
-                              Show
-                            </>
-                          )}
                         </Button>
                       )}
                     </div>
@@ -336,12 +317,8 @@ export function PlantPotDetail() {
                             </Button>
                           </div>
                           <div className="p-3 rounded-lg bg-muted border">
-                            <code className="text-xs break-all">
-                              {showKey ? (
-                                <span className="font-mono">{decryptedHex}</span>
-                              ) : (
-                                <span className="text-muted-foreground">••••••••••••••••••••••••••••••••</span>
-                              )}
+                            <code className="text-xs break-all font-mono">
+                              {decryptedHex}
                             </code>
                           </div>
                         </div>
@@ -361,12 +338,8 @@ export function PlantPotDetail() {
                             </Button>
                           </div>
                           <div className="p-3 rounded-lg bg-muted border">
-                            <code className="text-xs break-all">
-                              {showKey ? (
-                                <span className="font-mono">{nip19.nsecEncode(hexToBytes(decryptedHex))}</span>
-                              ) : (
-                                <span className="text-muted-foreground">••••••••••••••••••••••••••••••••</span>
-                              )}
+                            <code className="text-xs break-all font-mono">
+                              {nip19.nsecEncode(hexToBytes(decryptedHex))}
                             </code>
                           </div>
                         </div>
