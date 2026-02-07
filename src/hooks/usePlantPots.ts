@@ -67,23 +67,30 @@ export function usePlantPots() {
     const relay = nostr.relay('wss://relay.samt.st');
     const controller = new AbortController();
 
-    relay
-      .req(
-        [
-          {
-            kinds: [30000],
-            '#p': [user.pubkey],
-          },
-        ],
-        { signal: controller.signal }
-      )
-      .then((sub) => {
-        for (const event of sub) {
+    (async () => {
+      try {
+        const sub = await relay.req(
+          [
+            {
+              kinds: [30000],
+              '#p': [user.pubkey],
+            },
+          ],
+          { signal: controller.signal }
+        );
+
+        for await (const event of sub) {
           if (validatePlantPot(event)) {
             queryClient.invalidateQueries({ queryKey: ['plant-pots', user.pubkey] });
           }
         }
-      });
+      } catch (error) {
+        // Ignore abort errors
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error('Subscription error:', error);
+        }
+      }
+    })();
 
     return () => controller.abort();
   }, [user?.pubkey, nostr, queryClient]);
@@ -132,24 +139,31 @@ export function usePlantPot(identifier: string | undefined) {
     const relay = nostr.relay('wss://relay.samt.st');
     const controller = new AbortController();
 
-    relay
-      .req(
-        [
-          {
-            kinds: [30000],
-            '#p': [user.pubkey],
-            '#d': [identifier],
-          },
-        ],
-        { signal: controller.signal }
-      )
-      .then((sub) => {
-        for (const event of sub) {
+    (async () => {
+      try {
+        const sub = await relay.req(
+          [
+            {
+              kinds: [30000],
+              '#p': [user.pubkey],
+              '#d': [identifier],
+            },
+          ],
+          { signal: controller.signal }
+        );
+
+        for await (const event of sub) {
           if (validatePlantPot(event)) {
             queryClient.setQueryData(['plant-pot', user.pubkey, identifier], event);
           }
         }
-      });
+      } catch (error) {
+        // Ignore abort errors
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error('Subscription error:', error);
+        }
+      }
+    })();
 
     return () => controller.abort();
   }, [user?.pubkey, identifier, nostr, queryClient]);
