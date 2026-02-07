@@ -85,7 +85,13 @@ export function PlantPotDetail() {
       } else if (decrypted.startsWith('nsec1')) {
         console.log('nsec detected, decoding to hex');
         const decoded = nip19.decode(decrypted);
-        setDecryptedHex(decoded.data as string);
+        // decoded.data is Uint8Array, convert to hex string
+        const bytes = decoded.data as Uint8Array;
+        const hexString = Array.from(bytes)
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+        console.log('Converted to hex:', hexString, 'length:', hexString.length);
+        setDecryptedHex(hexString);
       } else {
         console.error('Invalid decrypted format - not hex or nsec:', decrypted);
         toast({
