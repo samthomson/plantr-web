@@ -140,43 +140,85 @@ export function AddWaterTaskDialog({ plantPotIdentifier }: AddWaterTaskDialogPro
     }
   };
 
+  const presets = [
+    { label: 'Quick', seconds: 1, icon: '💧' },
+    { label: 'Short', seconds: 2, icon: '💦' },
+    { label: 'Normal', seconds: 3, icon: '🌊' },
+    { label: 'Long', seconds: 5, icon: '🌧️' },
+    { label: 'Deep', seconds: 8, icon: '⛲' },
+  ];
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button className="bg-blue-600 hover:bg-blue-700 text-white">
           <Droplet className="mr-2 h-4 w-4" />
           Add Water Task
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Add Water Task</DialogTitle>
+            <DialogTitle className="text-2xl">💧 Water Your Plant</DialogTitle>
             <DialogDescription>
-              Set how long the IoT device should water this plant pot.
+              Choose a duration or enter a custom time
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="seconds">Duration (seconds)</Label>
-            <Input
-              id="seconds"
-              type="number"
-              min="1"
-              placeholder="30"
-              value={seconds}
-              onChange={(e) => setSeconds(e.target.value)}
-              disabled={isPending}
-              className="mt-2"
-            />
-            <p className="text-xs text-muted-foreground mt-2">
-              Enter the number of seconds the plant should be watered for.
-            </p>
+          
+          <div className="py-6 space-y-6">
+            {/* Preset buttons */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">Quick Select</Label>
+              <div className="grid grid-cols-5 gap-2">
+                {presets.map((preset) => (
+                  <button
+                    key={preset.seconds}
+                    type="button"
+                    onClick={() => setSeconds(preset.seconds.toString())}
+                    disabled={isPending}
+                    className={`
+                      flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all
+                      ${seconds === preset.seconds.toString() 
+                        ? 'border-blue-600 bg-blue-50 dark:bg-blue-950' 
+                        : 'border-gray-200 dark:border-gray-700 hover:border-blue-400'
+                      }
+                      disabled:opacity-50
+                    `}
+                  >
+                    <span className="text-2xl mb-1">{preset.icon}</span>
+                    <span className="text-xs font-medium">{preset.label}</span>
+                    <span className="text-xs text-muted-foreground">{preset.seconds}s</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom input */}
+            <div className="space-y-2">
+              <Label htmlFor="seconds" className="text-sm font-semibold">Custom Duration</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="seconds"
+                  type="number"
+                  min="1"
+                  placeholder="Enter seconds..."
+                  value={seconds}
+                  onChange={(e) => setSeconds(e.target.value)}
+                  disabled={isPending}
+                  className="font-mono"
+                />
+                <div className="flex items-center px-3 rounded-md border bg-muted">
+                  <span className="text-sm text-muted-foreground">seconds</span>
+                </div>
+              </div>
+            </div>
           </div>
+
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={isPending}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
+            <Button type="submit" disabled={isPending} className="bg-blue-600 hover:bg-blue-700">
               {isPending ? 'Adding...' : 'Add Task'}
             </Button>
           </DialogFooter>

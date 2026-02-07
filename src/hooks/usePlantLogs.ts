@@ -18,16 +18,17 @@ function validatePlantLog(event: NostrEvent): boolean {
 
 /**
  * Hook to fetch logs for a specific plant pot
+ * @param plantPotPubkey - The pubkey of the plant pot
  * @param plantPotIdentifier - The 'd' tag identifier of the plant pot
  */
-export function usePlantLogs(plantPotIdentifier: string | undefined) {
+export function usePlantLogs(plantPotPubkey: string | undefined, plantPotIdentifier: string | undefined) {
   const { nostr } = useNostr();
   const { user } = useCurrentUser();
 
   return useQuery({
-    queryKey: ['plant-logs', user?.pubkey, plantPotIdentifier],
+    queryKey: ['plant-logs', plantPotPubkey, plantPotIdentifier],
     queryFn: async (c) => {
-      if (!user?.pubkey || !plantPotIdentifier) return [];
+      if (!plantPotPubkey || !plantPotIdentifier) return [];
 
       const signal = AbortSignal.any([c.signal, AbortSignal.timeout(3000)]);
 
@@ -35,7 +36,7 @@ export function usePlantLogs(plantPotIdentifier: string | undefined) {
       const relay = nostr.relay('wss://relay.samt.st');
 
       // Query logs that reference this specific plant pot
-      const aTag = `30000:${user.pubkey}:${plantPotIdentifier}`;
+      const aTag = `30000:${plantPotPubkey}:${plantPotIdentifier}`;
       const events = await relay.query(
         [
           {
@@ -48,7 +49,7 @@ export function usePlantLogs(plantPotIdentifier: string | undefined) {
 
       return events.filter(validatePlantLog).sort((a, b) => b.created_at - a.created_at);
     },
-    enabled: !!user?.pubkey && !!plantPotIdentifier,
+    enabled: !!plantPotPubkey && !!plantPotIdentifier,
     refetchInterval: 5000, // Refetch logs every 5 seconds for real-time updates
   });
 }

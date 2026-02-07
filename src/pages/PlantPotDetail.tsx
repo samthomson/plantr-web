@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { AddWaterTaskDialog } from '@/components/AddWaterTaskDialog';
 import { ConnectionStatus } from '@/components/ConnectionStatus';
 import { useToast } from '@/hooks/useToast';
@@ -25,13 +27,13 @@ import {
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { extractTasks, formatDuration, formatRelativeTime, generatePlantPotNaddr } from '@/lib/plantUtils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { nip19 } from 'nostr-tools';
 
 export function PlantPotDetail() {
   const { identifier } = useParams<{ identifier: string }>();
   const { data: plantPot, isLoading: isPotLoading, refetch: refetchPot } = usePlantPot(identifier);
-  const { data: logs, isLoading: isLogsLoading, refetch: refetchLogs } = usePlantLogs(identifier);
+  const { data: logs, isLoading: isLogsLoading, refetch: refetchLogs } = usePlantLogs(plantPot?.pubkey, identifier);
   const { toast } = useToast();
   const { user } = useCurrentUser();
   const queryClient = useQueryClient();
@@ -213,6 +215,18 @@ export function PlantPotDetail() {
 
   const tasks = extractTasks(plantPot);
   const name = plantPot.tags.find(([name]) => name === 'name')?.[1] || identifier;
+
+  // Auto-refresh every 3 seconds when tasks exist
+  useEffect(() => {
+    if (tasks.length === 0) return;
+
+    const interval = setInterval(() => {
+      refetchPot();
+      refetchLogs();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [tasks.length, refetchPot, refetchLogs]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
@@ -428,46 +442,35 @@ export function PlantPotDetail() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">IoT Setup</CardTitle>
+                <CardTitle className="text-lg">Configuration</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Use the <strong>Replaceable Event ID</strong> displayed above to configure
-                    your IoT device. Click <strong>Copy</strong> to copy it to your clipboard.
-                  </p>
+              <CardContent className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Relay URL</Label>
+                  <Input
+                    value="wss://relay.samt.st"
+                    readOnly
+                    disabled
+                    className="font-mono text-xs"
+                  />
                 </div>
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold">Relay Configuration</p>
-                  <div className="p-3 rounded-lg bg-muted border">
-                    <p className="text-xs font-mono break-all">
-                      wss://relay.samt.st
-                    </p>
-                  </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Plant Pot Pubkey</Label>
+                  <Input
+                    value={plantPot.pubkey}
+                    readOnly
+                    disabled
+                    className="font-mono text-xs"
+                  />
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">How It Works</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm text-muted-foreground">
-                <div className="flex gap-2">
-                  <span className="font-semibold text-foreground">1.</span>
-                  <p>Add water tasks with duration in seconds</p>
-                </div>
-                <div className="flex gap-2">
-                  <span className="font-semibold text-foreground">2.</span>
-                  <p>IoT device watches for updates via WebSocket</p>
-                </div>
-                <div className="flex gap-2">
-                  <span className="font-semibold text-foreground">3.</span>
-                  <p>Device completes task and publishes log event</p>
-                </div>
-                <div className="flex gap-2">
-                  <span className="font-semibold text-foreground">4.</span>
-                  <p>Task is removed from pending list automatically</p>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Identifier (d-tag)</Label>
+                  <Input
+                    value={identifier}
+                    readOnly
+                    disabled
+                    className="font-mono text-xs"
+                  />
                 </div>
               </CardContent>
             </Card>
