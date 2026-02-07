@@ -273,7 +273,7 @@ export function PlantPotDetail() {
                   </div>
 
                   {/* Display encrypted/decrypted private key */}
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium flex items-center gap-2">
                         <Lock className="h-4 w-4" />
@@ -311,42 +311,65 @@ export function PlantPotDetail() {
                         </Button>
                       )}
                     </div>
-                    <div className="p-3 rounded-lg bg-muted border">
-                      <code className="text-xs break-all">
-                        {!decryptedHex ? (
-                          <span className="text-muted-foreground">
-                            {plantPot.content.substring(0, 50)}...{plantPot.content.substring(plantPot.content.length - 10)} (encrypted)
-                          </span>
-                        ) : showKey ? (
-                          <span className="font-mono">{decryptedHex}</span>
-                        ) : (
-                          <span className="text-muted-foreground">••••••••••••••••••••••••••••••••</span>
-                        )}
-                      </code>
-                    </div>
-                    
-                    {/* Show nsec and hex copy buttons when decrypted */}
-                    {decryptedHex && (
-                      <div className="grid grid-cols-2 gap-2 pt-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleCopyHex}
-                          className="gap-2"
-                        >
-                          <Copy className="h-4 w-4" />
-                          Copy Hex
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleCopyNsec}
-                          className="gap-2"
-                        >
-                          <Copy className="h-4 w-4" />
-                          Copy nsec
-                        </Button>
+
+                    {!decryptedHex ? (
+                      <div className="p-3 rounded-lg bg-muted border">
+                        <code className="text-xs break-all text-muted-foreground">
+                          {plantPot.content.substring(0, 50)}...{plantPot.content.substring(plantPot.content.length - 10)} (encrypted)
+                        </code>
                       </div>
+                    ) : (
+                      <>
+                        {/* Hex format */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium text-muted-foreground">Hex Format</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleCopyHex}
+                              className="gap-2 h-7 text-xs"
+                            >
+                              <Copy className="h-3 w-3" />
+                              Copy
+                            </Button>
+                          </div>
+                          <div className="p-3 rounded-lg bg-muted border">
+                            <code className="text-xs break-all">
+                              {showKey ? (
+                                <span className="font-mono">{decryptedHex}</span>
+                              ) : (
+                                <span className="text-muted-foreground">••••••••••••••••••••••••••••••••</span>
+                              )}
+                            </code>
+                          </div>
+                        </div>
+
+                        {/* nsec format */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium text-muted-foreground">nsec Format</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleCopyNsec}
+                              className="gap-2 h-7 text-xs"
+                            >
+                              <Copy className="h-3 w-3" />
+                              Copy
+                            </Button>
+                          </div>
+                          <div className="p-3 rounded-lg bg-muted border">
+                            <code className="text-xs break-all">
+                              {showKey ? (
+                                <span className="font-mono">{nip19.nsecEncode(decryptedHex)}</span>
+                              ) : (
+                                <span className="text-muted-foreground">••••••••••••••••••••••••••••••••</span>
+                              )}
+                            </code>
+                          </div>
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>
