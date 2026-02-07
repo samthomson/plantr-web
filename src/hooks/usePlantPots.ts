@@ -45,6 +45,8 @@ export function usePlantPots() {
 
       // Connect to only the custom relay
       const relay = nostr.relay('wss://relay.samt.st');
+      
+      // Fetch plant pots
       const events = await relay.query(
         [
           {
@@ -55,7 +57,41 @@ export function usePlantPots() {
         { signal }
       );
 
-      return events.filter(validatePlantPot).sort((a, b) => b.created_at - a.created_at);
+      // Fetch deletion events (kind 5) from the user
+      const deletions = await relay.query(
+        [
+          {
+            kinds: [5],
+            authors: [user.pubkey],
+          },
+        ],
+        { signal }
+      );
+
+      // Extract deleted event IDs and addressable coordinates
+      const deletedIds = new Set<string>();
+      const deletedCoords = new Set<string>();
+      
+      for (const deletion of deletions) {
+        // Check for 'e' tags (event IDs)
+        deletion.tags.forEach(([tag, value]) => {
+          if (tag === 'e') deletedIds.add(value);
+          if (tag === 'a') deletedCoords.add(value);
+        });
+      }
+
+      // Filter out deleted events
+      const validEvents = events.filter(event => {
+        if (deletedIds.has(event.id)) return false;
+        
+        const d = event.tags.find(([name]) => name === 'd')?.[1];
+        const coord = `30000:${event.pubkey}:${d}`;
+        if (deletedCoords.has(coord)) return false;
+        
+        return true;
+      });
+
+      return validEvents.filter(validatePlantPot).sort((a, b) => b.created_at - a.created_at);
     },
     enabled: !!user?.pubkey,
   });
