@@ -113,25 +113,7 @@ export function PlantPotDetail() {
       await navigator.clipboard.writeText(decryptedHex);
       toast({
         title: 'Copied!',
-        description: 'Hex private key copied to clipboard',
-      });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to copy',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleCopyNsec = async () => {
-    if (!decryptedHex) return;
-    try {
-      const nsec = nip19.nsecEncode(decryptedHex);
-      await navigator.clipboard.writeText(nsec);
-      toast({
-        title: 'Copied!',
-        description: 'nsec private key copied to clipboard',
+        description: 'Private key copied to clipboard',
       });
     } catch (error) {
       toast({
@@ -295,57 +277,30 @@ export function PlantPotDetail() {
                       )}
                     </div>
 
-                    {!decryptedHex ? (
-                      <div className="p-3 rounded-lg bg-muted border">
-                        <code className="text-xs break-all font-mono text-muted-foreground">
-                          {plantPot.content.substring(0, 50)}...{plantPot.content.substring(plantPot.content.length - 10)} (encrypted)
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 p-3 rounded-lg bg-muted border">
+                        <code className="text-xs break-all font-mono">
+                          {!decryptedHex ? (
+                            <span className="text-muted-foreground">
+                              {plantPot.content.substring(0, 50)}...{plantPot.content.substring(plantPot.content.length - 10)} (encrypted)
+                            </span>
+                          ) : (
+                            decryptedHex
+                          )}
                         </code>
                       </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {/* Hex */}
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium">Hex (64 characters)</span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={handleCopyHex}
-                              className="gap-2 h-7"
-                            >
-                              <Copy className="h-3 w-3" />
-                              Copy
-                            </Button>
-                          </div>
-                          <div className="p-3 rounded-lg bg-muted border">
-                            <code className="text-xs break-all font-mono">
-                              {decryptedHex}
-                            </code>
-                          </div>
-                        </div>
-
-                        {/* nsec */}
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium">nsec (bech32)</span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={handleCopyNsec}
-                              className="gap-2 h-7"
-                            >
-                              <Copy className="h-3 w-3" />
-                              Copy
-                            </Button>
-                          </div>
-                          <div className="p-3 rounded-lg bg-muted border">
-                            <code className="text-xs break-all font-mono">
-                              {nip19.nsecEncode(decryptedHex)}
-                            </code>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                      {decryptedHex && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCopyHex}
+                          className="gap-2"
+                        >
+                          <Copy className="h-4 w-4" />
+                          Copy
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </CardHeader>
