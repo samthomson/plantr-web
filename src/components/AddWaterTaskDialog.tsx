@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/useToast';
 import { Droplet } from 'lucide-react';
 import { extractTasks } from '@/lib/plantUtils';
 import { NSecSigner } from '@nostrify/nostrify';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AddWaterTaskDialogProps {
   plantPotIdentifier: string;
@@ -31,6 +32,7 @@ export function AddWaterTaskDialog({ plantPotIdentifier }: AddWaterTaskDialogPro
   const { user } = useCurrentUser();
   const { nostr } = useNostr();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,6 +111,10 @@ export function AddWaterTaskDialog({ plantPotIdentifier }: AddWaterTaskDialogPro
       // Publish to only the custom relay
       const relay = nostr.relay('wss://relay.samt.st');
       await relay.event(signedEvent, { pow: 0 });
+
+      // Invalidate queries to refetch immediately
+      queryClient.invalidateQueries({ queryKey: ['plant-pot', user.pubkey, plantPotIdentifier] });
+      queryClient.invalidateQueries({ queryKey: ['plant-pots', user.pubkey] });
 
       toast({
         title: 'Success',
