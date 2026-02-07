@@ -26,19 +26,15 @@ export function PlantPotList() {
 
     setDeletingId(pot.id);
     try {
-      // Decrypt plant pot's private key
-      const decrypted = await user.signer.nip44.decrypt(user.pubkey, pot.content);
-      const hexKey = decrypted.startsWith('nsec1') 
-        ? (await import('nostr-tools')).nip19.decode(decrypted).data as string
-        : decrypted;
-
+      const dTag = pot.tags.find(([t]: string[]) => t === 'd')?.[1];
+      
       // Create deletion event (kind 5)
       const deletionEvent = {
         kind: 5,
         content: 'Deleting plant pot',
         tags: [
           ['e', pot.id],
-          ['a', `30000:${pot.pubkey}:${pot.tags.find(([t]: string[]) => t === 'd')?.[1]}`],
+          ['a', `30000:${pot.pubkey}:${dTag}`],
         ],
         created_at: Math.floor(Date.now() / 1000),
       };
@@ -49,6 +45,9 @@ export function PlantPotList() {
       // Publish deletion
       const relay = nostr.relay('wss://relay.samt.st');
       await relay.event(signedDeletion, { pow: 0 });
+
+      // Immediately remove from UI
+      queryClient.invalidateQueries({ queryKey: ['plant-pots', user.pubkey] });
 
       toast({
         title: 'Deleted',
