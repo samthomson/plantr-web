@@ -61,10 +61,7 @@ export function PlantPotList() {
                 </CardDescription>
                 {/* Debug info */}
                 <div className="text-xs text-muted-foreground mt-2 font-mono break-all">
-                  <div>ID: {pot.id}</div>
-                  <div>Pubkey: {pot.pubkey}</div>
-                  <div>d-tag: {identifier}</div>
-                  <div>Created: {new Date(pot.created_at * 1000).toLocaleString()}</div>
+                  <pre className="whitespace-pre-wrap">{JSON.stringify(pot, null, 2)}</pre>
                 </div>
               </CardHeader>
               <CardContent>
