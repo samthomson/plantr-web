@@ -86,8 +86,9 @@ export function AddWaterTaskDialog({ plantPotIdentifier }: AddWaterTaskDialogPro
       // Add new water task
       const newTasks = [...existingTasks, { type: 'water', seconds: seconds.trim() }];
 
-      // Get owner pubkey from p tag
+      // Get owner pubkey and name from tags
       const ownerPubkey = plantPot.tags.find(([name]) => name === 'p')?.[1];
+      const plantName = plantPot.tags.find(([name]) => name === 'name')?.[1];
 
       // Create updated plant pot event with all tasks
       const tags: string[][] = [
@@ -96,6 +97,11 @@ export function AddWaterTaskDialog({ plantPotIdentifier }: AddWaterTaskDialogPro
         ['client', window.location.hostname],
         ...newTasks.map(task => ['task', task.type, task.seconds]),
       ];
+
+      // Add name tag if it exists
+      if (plantName) {
+        tags.splice(1, 0, ['name', plantName]);
+      }
 
       const unsignedEvent = {
         kind: 30000,

@@ -103,6 +103,7 @@ export function PlantPotList() {
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {plantPots.map((pot) => {
         const identifier = pot.tags.find(([name]) => name === 'd')?.[1] || 'unknown';
+        const name = pot.tags.find(([name]) => name === 'name')?.[1] || identifier;
         const tasks = extractTasks(pot);
 
         return (
@@ -113,7 +114,7 @@ export function PlantPotList() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Sprout className="h-5 w-5 text-green-600" />
-                      <CardTitle className="text-lg">{identifier}</CardTitle>
+                      <CardTitle className="text-lg">{name}</CardTitle>
                     </div>
                     <Button
                       variant="ghost"

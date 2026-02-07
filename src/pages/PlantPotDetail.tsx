@@ -189,6 +189,7 @@ export function PlantPotDetail() {
   }
 
   const tasks = extractTasks(plantPot);
+  const name = plantPot.tags.find(([name]) => name === 'name')?.[1] || identifier;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
@@ -213,8 +214,8 @@ export function PlantPotDetail() {
                     <Sprout className="h-6 w-6 text-green-600 dark:text-green-400" />
                   </div>
                   <div>
-                    <CardTitle className="text-2xl">{identifier}</CardTitle>
-                    <CardDescription>Plant Pot</CardDescription>
+                    <CardTitle className="text-2xl">{name}</CardTitle>
+                    <CardDescription>Plant Pot • {identifier}</CardDescription>
                   </div>
                 </div>
 

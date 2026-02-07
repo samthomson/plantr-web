@@ -79,12 +79,18 @@ export function CreatePlantPotDialog() {
       const encryptedSecretKey = await user.signer.nip44.encrypt(user.pubkey, plantPotSecretKeyHex);
       console.log('Encrypted secret key:', encryptedSecretKey);
 
+      // Slugify the identifier for d-tag
+      const slug = identifier.trim().toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
       // Create the plant pot event signed by the PLANT POT's keypair
       const unsignedEvent = {
         kind: 30000,
         content: encryptedSecretKey, // Encrypted hex secret key
         tags: [
-          ['d', identifier.trim()],
+          ['d', slug], // Slugified identifier
+          ['name', identifier.trim()], // Original name for display
           ['p', user.pubkey], // Owner's pubkey
           ['client', window.location.hostname],
         ],
