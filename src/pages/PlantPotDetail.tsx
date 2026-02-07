@@ -74,12 +74,26 @@ export function PlantPotDetail() {
     setIsDecrypting(true);
     try {
       const decrypted = await user.signer.nip44.decrypt(user.pubkey, plantPot.content);
-      // If it's an nsec, decode it to hex. Otherwise use as-is.
-      if (decrypted.startsWith('nsec1')) {
+      console.log('Raw decrypted value:', decrypted);
+      console.log('Decrypted length:', decrypted.length);
+      console.log('Decrypted type:', typeof decrypted);
+      
+      // Validate it's actually hex (64 characters, 0-9a-f only)
+      if (/^[0-9a-fA-F]{64}$/.test(decrypted)) {
+        console.log('Valid 64-char hex detected');
+        setDecryptedHex(decrypted.toLowerCase());
+      } else if (decrypted.startsWith('nsec1')) {
+        console.log('nsec detected, decoding to hex');
         const decoded = nip19.decode(decrypted);
         setDecryptedHex(decoded.data as string);
       } else {
-        setDecryptedHex(decrypted);
+        console.error('Invalid decrypted format - not hex or nsec:', decrypted);
+        toast({
+          title: 'Error',
+          description: `Invalid key format (${decrypted.length} chars). Expected 64-char hex or nsec.`,
+          variant: 'destructive',
+        });
+        return;
       }
     } catch (error) {
       console.error('Decryption error:', error);
