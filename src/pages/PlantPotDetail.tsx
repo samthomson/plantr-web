@@ -23,7 +23,7 @@ import {
   Lock
 } from 'lucide-react';
 import { extractTasks, formatDuration, formatRelativeTime, generatePlantPotNaddr } from '@/lib/plantUtils';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { nip19 } from 'nostr-tools';
 import { hexToBytes } from '@noble/hashes/utils';
 
@@ -36,6 +36,17 @@ export function PlantPotDetail() {
   const [copied, setCopied] = useState(false);
   const [decryptedHex, setDecryptedHex] = useState<string | null>(null);
   const [isDecrypting, setIsDecrypting] = useState(false);
+
+  // Safely compute nsec from hex
+  const decryptedNsec = useMemo(() => {
+    if (!decryptedHex) return null;
+    try {
+      return nip19.nsecEncode(hexToBytes(decryptedHex));
+    } catch (error) {
+      console.error('Error encoding nsec:', error);
+      return null;
+    }
+  }, [decryptedHex]);
 
   useSeoMeta({
     title: `Plant Pot: ${identifier || 'Loading...'}`,
@@ -84,9 +95,20 @@ export function PlantPotDetail() {
       }
 
       const decrypted = await user.signer.nip44.decrypt(user.pubkey, plantPot.content);
+      console.log('Decrypted value:', decrypted);
+      
+      // Validate that it's a valid hex string
+      if (!/^[0-9a-fA-F]*$/.test(decrypted)) {
+        throw new Error('Decrypted value is not valid hex');
+      }
+      
       // Ensure the hex string is padded to 64 characters
       const paddedHex = decrypted.padStart(64, '0');
       console.log('Decrypted secret key (hex):', paddedHex);
+      
+      // Test that we can convert to bytes (will throw if invalid)
+      hexToBytes(paddedHex);
+      
       setDecryptedHex(paddedHex);
       toast({
         title: 'Decrypted!',
@@ -123,11 +145,10 @@ export function PlantPotDetail() {
   };
 
   const handleCopyNsec = async () => {
-    if (!decryptedHex) return;
+    if (!decryptedNsec) return;
 
     try {
-      const nsec = nip19.nsecEncode(hexToBytes(decryptedHex));
-      await navigator.clipboard.writeText(nsec);
+      await navigator.clipboard.writeText(decryptedNsec);
       toast({
         title: 'Copied!',
         description: 'Private key (nsec) copied to clipboard',
@@ -339,7 +360,7 @@ export function PlantPotDetail() {
                           </div>
                           <div className="p-3 rounded-lg bg-muted border">
                             <code className="text-xs break-all font-mono">
-                              {nip19.nsecEncode(hexToBytes(decryptedHex))}
+                              {decryptedNsec || 'Error encoding nsec'}
                             </code>
                           </div>
                         </div>
