@@ -20,26 +20,49 @@ import {
   Calendar,
   Clock,
   Eye,
-  Lock
+  Lock,
+  RefreshCw
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { extractTasks, formatDuration, formatRelativeTime, generatePlantPotNaddr } from '@/lib/plantUtils';
 import { useState } from 'react';
 import { nip19 } from 'nostr-tools';
 
 export function PlantPotDetail() {
   const { identifier } = useParams<{ identifier: string }>();
-  const { data: plantPot, isLoading: isPotLoading } = usePlantPot(identifier);
-  const { data: logs, isLoading: isLogsLoading } = usePlantLogs(identifier);
+  const { data: plantPot, isLoading: isPotLoading, refetch: refetchPot } = usePlantPot(identifier);
+  const { data: logs, isLoading: isLogsLoading, refetch: refetchLogs } = usePlantLogs(identifier);
   const { toast } = useToast();
   const { user } = useCurrentUser();
+  const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
   const [decryptedHex, setDecryptedHex] = useState<string | null>(null);
   const [isDecrypting, setIsDecrypting] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useSeoMeta({
     title: `Plant Pot: ${identifier || 'Loading...'}`,
     description: 'Manage your plant pot and view watering logs',
   });
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([refetchPot(), refetchLogs()]);
+      toast({
+        title: 'Refreshed',
+        description: 'Plant pot data updated',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to refresh',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const handleCopyNaddr = async () => {
     if (!plantPot) {
@@ -201,7 +224,19 @@ export function PlantPotDetail() {
               Back to Plant Pots
             </Button>
           </Link>
-          <ConnectionStatus />
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <ConnectionStatus />
+          </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
