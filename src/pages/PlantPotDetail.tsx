@@ -23,9 +23,7 @@ import {
   Lock
 } from 'lucide-react';
 import { extractTasks, formatDuration, formatRelativeTime, generatePlantPotNaddr } from '@/lib/plantUtils';
-import { useState, useMemo } from 'react';
-import { nip19 } from 'nostr-tools';
-import { hexToBytes } from '@noble/hashes/utils';
+import { useState } from 'react';
 
 export function PlantPotDetail() {
   const { identifier } = useParams<{ identifier: string }>();
@@ -34,19 +32,8 @@ export function PlantPotDetail() {
   const { toast } = useToast();
   const { user } = useCurrentUser();
   const [copied, setCopied] = useState(false);
-  const [decryptedHex, setDecryptedHex] = useState<string | null>(null);
+  const [decryptedKey, setDecryptedKey] = useState<string | null>(null);
   const [isDecrypting, setIsDecrypting] = useState(false);
-
-  // Safely compute nsec from hex
-  const decryptedNsec = useMemo(() => {
-    if (!decryptedHex) return null;
-    try {
-      return nip19.nsecEncode(hexToBytes(decryptedHex));
-    } catch (error) {
-      console.error('Error encoding nsec:', error);
-      return null;
-    }
-  }, [decryptedHex]);
 
   useSeoMeta({
     title: `Plant Pot: ${identifier || 'Loading...'}`,
@@ -85,35 +72,8 @@ export function PlantPotDetail() {
 
     setIsDecrypting(true);
     try {
-      if (!user.signer.nip44) {
-        toast({
-          title: 'Error',
-          description: 'Please upgrade your signer extension to support NIP-44 encryption',
-          variant: 'destructive',
-        });
-        return;
-      }
-
       const decrypted = await user.signer.nip44.decrypt(user.pubkey, plantPot.content);
-      console.log('Decrypted value:', decrypted);
-      
-      // Validate that it's a valid hex string
-      if (!/^[0-9a-fA-F]*$/.test(decrypted)) {
-        throw new Error('Decrypted value is not valid hex');
-      }
-      
-      // Ensure the hex string is padded to 64 characters
-      const paddedHex = decrypted.padStart(64, '0');
-      console.log('Decrypted secret key (hex):', paddedHex);
-      
-      // Test that we can convert to bytes (will throw if invalid)
-      hexToBytes(paddedHex);
-      
-      setDecryptedHex(paddedHex);
-      toast({
-        title: 'Decrypted!',
-        description: 'Private key decrypted successfully',
-      });
+      setDecryptedKey(decrypted);
     } catch (error) {
       console.error('Decryption error:', error);
       toast({
@@ -126,37 +86,19 @@ export function PlantPotDetail() {
     }
   };
 
-  const handleCopyHex = async () => {
-    if (!decryptedHex) return;
+  const handleCopy = async () => {
+    if (!decryptedKey) return;
 
     try {
-      await navigator.clipboard.writeText(decryptedHex);
+      await navigator.clipboard.writeText(decryptedKey);
       toast({
         title: 'Copied!',
-        description: 'Private key (hex) copied to clipboard',
+        description: 'Private key copied to clipboard',
       });
     } catch (error) {
       toast({
         title: 'Error',
         description: 'Failed to copy private key',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleCopyNsec = async () => {
-    if (!decryptedNsec) return;
-
-    try {
-      await navigator.clipboard.writeText(decryptedNsec);
-      toast({
-        title: 'Copied!',
-        description: 'Private key (nsec) copied to clipboard',
-      });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to copy nsec',
         variant: 'destructive',
       });
     }
@@ -301,7 +243,7 @@ export function PlantPotDetail() {
                         <Lock className="h-4 w-4" />
                         IoT Private Key
                       </span>
-                      {!decryptedHex && (
+                      {!decryptedKey && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -315,57 +257,30 @@ export function PlantPotDetail() {
                       )}
                     </div>
 
-                    {!decryptedHex ? (
-                      <div className="p-3 rounded-lg bg-muted border">
-                        <code className="text-xs break-all text-muted-foreground">
-                          {plantPot.content.substring(0, 50)}...{plantPot.content.substring(plantPot.content.length - 10)} (encrypted)
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 p-3 rounded-lg bg-muted border">
+                        <code className="text-xs break-all font-mono">
+                          {!decryptedKey ? (
+                            <span className="text-muted-foreground">
+                              {plantPot.content.substring(0, 50)}...{plantPot.content.substring(plantPot.content.length - 10)} (encrypted)
+                            </span>
+                          ) : (
+                            decryptedKey
+                          )}
                         </code>
                       </div>
-                    ) : (
-                      <>
-                        {/* Hex format */}
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-muted-foreground">Hex Format</span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={handleCopyHex}
-                              className="gap-2 h-7 text-xs"
-                            >
-                              <Copy className="h-3 w-3" />
-                              Copy
-                            </Button>
-                          </div>
-                          <div className="p-3 rounded-lg bg-muted border">
-                            <code className="text-xs break-all font-mono">
-                              {decryptedHex}
-                            </code>
-                          </div>
-                        </div>
-
-                        {/* nsec format */}
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-muted-foreground">nsec Format</span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={handleCopyNsec}
-                              className="gap-2 h-7 text-xs"
-                            >
-                              <Copy className="h-3 w-3" />
-                              Copy
-                            </Button>
-                          </div>
-                          <div className="p-3 rounded-lg bg-muted border">
-                            <code className="text-xs break-all font-mono">
-                              {decryptedNsec || 'Error encoding nsec'}
-                            </code>
-                          </div>
-                        </div>
-                      </>
-                    )}
+                      {decryptedKey && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCopy}
+                          className="gap-2"
+                        >
+                          <Copy className="h-4 w-4" />
+                          Copy
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </CardHeader>
