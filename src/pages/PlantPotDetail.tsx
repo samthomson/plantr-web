@@ -250,6 +250,26 @@ export function PlantPotDetail() {
     );
   }
 
+  // Store refetch functions in refs to avoid dependency issues
+  const refetchPotRef = useRef(refetchPot);
+  const refetchLogsRef = useRef(refetchLogs);
+  refetchPotRef.current = refetchPot;
+  refetchLogsRef.current = refetchLogs;
+
+  // Auto-refresh every 1 second when tasks exist
+  useEffect(() => {
+    if (!plantPot) return;
+    const tasks = extractTasks(plantPot);
+    if (tasks.length === 0) return;
+
+    const interval = setInterval(() => {
+      refetchPotRef.current();
+      refetchLogsRef.current();
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [plantPot]);
+
   if (!plantPot) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
@@ -277,24 +297,6 @@ export function PlantPotDetail() {
 
   const tasks = extractTasks(plantPot);
   const name = plantPot.tags.find(([name]) => name === 'name')?.[1] || identifier;
-
-  // Store refetch functions in refs to avoid dependency issues
-  const refetchPotRef = useRef(refetchPot);
-  const refetchLogsRef = useRef(refetchLogs);
-  refetchPotRef.current = refetchPot;
-  refetchLogsRef.current = refetchLogs;
-
-  // Auto-refresh every 1 second when tasks exist
-  useEffect(() => {
-    if (tasks.length === 0) return;
-
-    const interval = setInterval(() => {
-      refetchPotRef.current();
-      refetchLogsRef.current();
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [tasks.length]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
