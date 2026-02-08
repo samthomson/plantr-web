@@ -176,7 +176,7 @@ export function PlantPotDetail() {
       updatedTags.splice(1, 0, ['name', editedName.trim()]);
 
       const unsignedEvent = {
-        kind: 30000,
+        kind: 34419,
         content: plantPot.content,
         tags: updatedTags,
         created_at: Math.floor(Date.now() / 1000),

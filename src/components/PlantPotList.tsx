@@ -34,7 +34,7 @@ export function PlantPotList() {
         content: 'Deleting plant pot',
         tags: [
           ['e', pot.id],
-          ['a', `30000:${pot.pubkey}:${dTag}`],
+          ['a', `34419:${pot.pubkey}:${dTag}`],
         ],
         created_at: Math.floor(Date.now() / 1000),
       };

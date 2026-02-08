@@ -4,10 +4,10 @@ import { useCurrentUser } from './useCurrentUser';
 import type { NostrEvent } from '@nostrify/nostrify';
 
 /**
- * Validator function for plant log events (kind 30001)
+ * Validator function for plant log events (kind 4171)
  */
 function validatePlantLog(event: NostrEvent): boolean {
-  if (event.kind !== 30001) return false;
+  if (event.kind !== 4171) return false;
 
   // Check for required 'a' tag
   const a = event.tags.find(([name]) => name === 'a')?.[1];
@@ -36,11 +36,11 @@ export function usePlantLogs(plantPotPubkey: string | undefined, plantPotIdentif
       const relay = nostr.relay('wss://relay.samt.st');
 
       // Query logs that reference this specific plant pot
-      const aTag = `30000:${plantPotPubkey}:${plantPotIdentifier}`;
+      const aTag = `34419:${plantPotPubkey}:${plantPotIdentifier}`;
       const events = await relay.query(
         [
           {
-            kinds: [30001],
+            kinds: [4171],
             '#a': [aTag],
           },
         ],

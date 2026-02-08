@@ -21,11 +21,11 @@ export function usePlantPotSubscription() {
     // Connect to only the custom relay
     const relay = nostr.relay('wss://relay.samt.st');
 
-    // Subscribe to plant pot events (kind 30000) for the current user (by owner p tag)
+    // Subscribe to plant pot events (kind 34419) for the current user (by owner p tag)
     relay.req(
       [
         {
-          kinds: [30000],
+          kinds: [34419],
           '#p': [user.pubkey], // Subscribe by owner pubkey
         },
       ],
@@ -49,7 +49,7 @@ export function usePlantPotSubscription() {
       [
         {
           kinds: [30001],
-          '#a': [`30000:${user.pubkey}:`], // This will match all logs for user's plant pots
+          '#a': [`34419:${user.pubkey}:`], // This will match all logs for user's plant pots
         },
       ],
       {

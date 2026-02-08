@@ -104,7 +104,7 @@ export function AddWaterTaskDialog({ plantPotIdentifier }: AddWaterTaskDialogPro
       }
 
       const unsignedEvent = {
-        kind: 30000,
+        kind: 34419,
         content: encryptedSecretKey, // Keep the encrypted hex secret key in content
         tags,
         created_at: Math.floor(Date.now() / 1000),

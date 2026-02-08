@@ -5,20 +5,19 @@ import type { NostrEvent } from '@nostrify/nostrify';
 import { useEffect } from 'react';
 
 /**
- * Validator function for plant pot events (kind 30000)
+ * Validator function for plant pot events (kind 34419)
  * Plant pots must have:
  * - d tag (identifier)
  * - p tag (owner pubkey)
- * - content (encrypted nsec)
  */
 function validatePlantPot(event: NostrEvent): boolean {
-  if (event.kind !== 30000) return false;
+  if (event.kind !== 34419) return false;
 
   // Check for required 'd' tag (identifier)
   const d = event.tags.find(([name]) => name === 'd')?.[1];
   if (!d) return false;
 
-  // Check for required 'p' tag (owner pubkey) - this distinguishes plant pots from other kind 30000 events
+  // Check for required 'p' tag (owner pubkey) - this distinguishes plant pots from other kind 34419 events
   const p = event.tags.find(([name]) => name === 'p')?.[1];
   if (!p) return false;
 
@@ -47,7 +46,7 @@ export function usePlantPots() {
       const events = await relay.query(
         [
           {
-            kinds: [30000],
+            kinds: [34419],
             '#p': [user.pubkey], // Query by owner pubkey
           },
         ],
@@ -82,7 +81,7 @@ export function usePlantPots() {
         if (deletedIds.has(event.id)) return false;
         
         const d = event.tags.find(([name]) => name === 'd')?.[1];
-        const coord = `30000:${event.pubkey}:${d}`;
+        const coord = `34419:${event.pubkey}:${d}`;
         if (deletedCoords.has(coord)) return false;
         
         return true;
@@ -105,7 +104,7 @@ export function usePlantPots() {
         const sub = await relay.req(
           [
             {
-              kinds: [30000],
+              kinds: [34419],
               '#p': [user.pubkey],
             },
           ],
@@ -151,7 +150,7 @@ export function usePlantPot(identifier: string | undefined) {
       const events = await relay.query(
         [
           {
-            kinds: [30000],
+            kinds: [34419],
             '#p': [user.pubkey], // Query by owner pubkey
             '#d': [identifier],
           },
@@ -178,7 +177,7 @@ export function usePlantPot(identifier: string | undefined) {
         const sub = await relay.req(
           [
             {
-              kinds: [30000],
+              kinds: [34419],
               '#p': [user.pubkey],
               '#d': [identifier],
             },

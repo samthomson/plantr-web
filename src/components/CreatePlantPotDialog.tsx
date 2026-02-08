@@ -86,13 +86,14 @@ export function CreatePlantPotDialog() {
 
       // Create the plant pot event signed by the PLANT POT's keypair
       const unsignedEvent = {
-        kind: 30000,
+        kind: 34419,
         content: encryptedSecretKey, // Encrypted hex secret key
         tags: [
           ['d', slug], // Slugified identifier
           ['name', identifier.trim()], // Original name for display
           ['p', user.pubkey], // Owner's pubkey
           ['client', window.location.hostname],
+          ['alt', `Plant pot configuration: ${identifier.trim()}`],
         ],
         created_at: Math.floor(Date.now() / 1000),
         pubkey: plantPotPubkey, // Event is authored by the plant pot itself
