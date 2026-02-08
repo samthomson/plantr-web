@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { extractTasks, formatDuration, formatRelativeTime, generatePlantPotNaddr } from '@/lib/plantUtils';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { nip19 } from 'nostr-tools';
 
 export function PlantPotDetail() {
@@ -278,17 +278,22 @@ export function PlantPotDetail() {
   const tasks = extractTasks(plantPot);
   const name = plantPot.tags.find(([name]) => name === 'name')?.[1] || identifier;
 
+  // Store refetch functions in refs to avoid dependency issues
+  const refetchPotRef = useRef(refetchPot);
+  const refetchLogsRef = useRef(refetchLogs);
+  refetchPotRef.current = refetchPot;
+  refetchLogsRef.current = refetchLogs;
+
   // Auto-refresh every 1 second when tasks exist
   useEffect(() => {
-    if (!plantPot || tasks.length === 0) return;
+    if (tasks.length === 0) return;
 
     const interval = setInterval(() => {
-      refetchPot();
-      refetchLogs();
+      refetchPotRef.current();
+      refetchLogsRef.current();
     }, 1000);
 
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tasks.length]);
 
   return (
