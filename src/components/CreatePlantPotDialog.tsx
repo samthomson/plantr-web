@@ -130,7 +130,7 @@ export function CreatePlantPotDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button className="bg-green-600 hover:bg-green-700 text-white">
           <Plus className="mr-2 h-4 w-4" />
           New Plant Pot
         </Button>

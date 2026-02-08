@@ -151,7 +151,7 @@ export function AddWaterTaskDialog({ plantPotIdentifier }: AddWaterTaskDialogPro
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+        <Button className="bg-green-600 hover:bg-green-700 text-white">
           <Droplet className="mr-2 h-4 w-4" />
           Add Water Task
         </Button>
@@ -218,7 +218,7 @@ export function AddWaterTaskDialog({ plantPotIdentifier }: AddWaterTaskDialogPro
             <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={isPending}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending} className="bg-blue-600 hover:bg-blue-700">
+            <Button type="submit" disabled={isPending} className="bg-green-600 hover:bg-green-700 text-white">
               {isPending ? 'Adding...' : 'Add Task'}
             </Button>
           </DialogFooter>

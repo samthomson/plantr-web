@@ -67,18 +67,11 @@ export function PlantPotList() {
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {[...Array(3)].map((_, i) => (
-          <Card key={i}>
-            <CardHeader>
-              <Skeleton className="h-6 w-3/4" />
-              <Skeleton className="h-4 w-1/2 mt-2" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-10 w-full" />
-            </CardContent>
-          </Card>
-        ))}
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center space-y-3">
+          <Sprout className="h-8 w-8 mx-auto text-green-600 animate-pulse" />
+          <p className="text-sm text-muted-foreground">Loading plant pots...</p>
+        </div>
       </div>
     );
   }
@@ -128,10 +121,6 @@ export function PlantPotList() {
                   <CardDescription>
                     {tasks.length > 0 ? `${tasks.length} pending task${tasks.length !== 1 ? 's' : ''}` : 'No tasks'}
                   </CardDescription>
-                  {/* Debug info */}
-                  <div className="text-xs text-muted-foreground mt-2 font-mono break-all">
-                    <pre className="whitespace-pre-wrap">{JSON.stringify(pot, null, 2)}</pre>
-                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
