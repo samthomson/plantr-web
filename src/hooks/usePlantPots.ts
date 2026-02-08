@@ -160,19 +160,10 @@ export function usePlantPot(identifier: string | undefined) {
       );
 
       const validEvents = events.filter(validatePlantPot);
-      const pot = validEvents.length > 0 ? validEvents[0] : null;
-      
-      // Only auto-refresh if there are tasks
-      const hasTasks = pot && extractTasks(pot).length > 0;
-      return pot;
+      return validEvents.length > 0 ? validEvents[0] : null;
     },
     enabled: !!user?.pubkey && !!identifier,
-    refetchInterval: (query) => {
-      const pot = query.state.data;
-      if (!pot) return false;
-      const tasks = extractTasks(pot);
-      return tasks.length > 0 ? 1000 : false; // 1 second if tasks exist
-    },
+    refetchInterval: 2000, // Refetch every 2 seconds
   });
 
   // Subscribe to real-time updates for this specific plant pot
