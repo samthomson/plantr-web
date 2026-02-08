@@ -280,7 +280,7 @@ export function PlantPotDetail() {
 
   // Auto-refresh every 1 second when tasks exist
   useEffect(() => {
-    if (tasks.length === 0) return;
+    if (!plantPot || tasks.length === 0) return;
 
     const interval = setInterval(() => {
       refetchPot();
@@ -288,7 +288,7 @@ export function PlantPotDetail() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [tasks.length, refetchPot, refetchLogs]);
+  }, [plantPot, tasks.length, refetchPot, refetchLogs]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
