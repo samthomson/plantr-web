@@ -67,15 +67,17 @@ function PlantPotCard({ pot, onDelete, deletingId }: { pot: any; onDelete: (e: R
                 {recentLogs.map((log) => {
                   const logTasks = extractTasks(log);
                   return (
-                    <div key={log.id} className="flex items-start gap-2 text-xs">
-                      <CheckCheck className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        {logTasks.map((task, idx) => (
-                          <div key={idx} className="text-muted-foreground">
-                            <span className="capitalize">{task.type}</span> {formatDuration(parseInt(task.seconds))}
-                          </div>
-                        ))}
-                        <div className="text-muted-foreground/70 mt-0.5">
+                    <div key={log.id} className="flex items-center gap-2 text-xs">
+                      <CheckCheck className="h-3 w-3 text-green-600 flex-shrink-0" />
+                      <div className="flex items-center justify-between flex-1 min-w-0">
+                        <div className="text-muted-foreground">
+                          {logTasks.map((task, idx) => (
+                            <span key={idx}>
+                              <span className="capitalize">{task.type}</span> {formatDuration(parseInt(task.seconds))}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="text-muted-foreground/70 text-xs">
                           {formatRelativeTime(log.created_at)}
                         </div>
                       </div>
