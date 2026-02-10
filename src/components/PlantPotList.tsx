@@ -66,7 +66,7 @@ function PlantPotCard({ pot, onDelete, deletingId }: { pot: any; onDelete: (e: R
 
             {/* Recent activity logs */}
             {recentLogs.length > 0 && (
-              <div className="space-y-2 pt-3 border-t">
+              <div className="space-y-2">
                 <p className="text-xs font-medium text-muted-foreground mb-2">Recent Activity</p>
                 {recentLogs.map((log) => {
                   const logTasks = extractTasks(log);
@@ -91,24 +91,26 @@ function PlantPotCard({ pot, onDelete, deletingId }: { pot: any; onDelete: (e: R
               </div>
             )}
 
-            {/* Weather data - integrated with activity */}
-            {weatherReading && (
-              <div className={`flex items-center gap-3 text-xs ${recentLogs.length > 0 ? 'pt-2' : 'pt-3 border-t'}`}>
-                <div className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400">
-                  <Thermometer className="h-3.5 w-3.5" />
-                  <span className="font-semibold">{getTemperature(weatherReading)}°C</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
-                  <Droplets className="h-3.5 w-3.5" />
-                  <span className="font-semibold">{getHumidity(weatherReading)}%</span>
-                </div>
-              </div>
-            )}
-
             {tasks.length === 0 && recentLogs.length === 0 && !weatherReading && (
               <p className="text-sm text-muted-foreground text-center py-4">
                 No activity yet
               </p>
+            )}
+
+            {/* Weather data - subtle at bottom */}
+            {weatherReading && (
+              <div className="pt-4 mt-auto">
+                <div className="flex items-center gap-3 text-xs text-muted-foreground/60">
+                  <div className="flex items-center gap-1">
+                    <Thermometer className="h-3 w-3" />
+                    <span>{getTemperature(weatherReading)}°</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Droplets className="h-3 w-3" />
+                    <span>{getHumidity(weatherReading)}%</span>
+                  </div>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
