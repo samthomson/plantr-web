@@ -29,7 +29,9 @@ import {
   RefreshCw,
   Pencil,
   Check,
-  X
+  X,
+  Thermometer,
+  Droplets
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { extractTasks, formatDuration, formatRelativeTime, generatePlantPotNaddr } from '@/lib/plantUtils';
@@ -471,27 +473,6 @@ export function PlantPotDetail() {
                     onChange={handleWeatherStationChange}
                   />
 
-                  {/* Weather Data Display */}
-                  {weatherReading && (
-                    <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 space-y-1">
-                      <p className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-2">Current Conditions</p>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        {getTemperature(weatherReading) && (
-                          <div>
-                            <span className="text-muted-foreground">Temp:</span>{' '}
-                            <span className="font-medium">{getTemperature(weatherReading)}°C</span>
-                          </div>
-                        )}
-                        {getHumidity(weatherReading) && (
-                          <div>
-                            <span className="text-muted-foreground">Humidity:</span>{' '}
-                            <span className="font-medium">{getHumidity(weatherReading)}%</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
                   {/* Display encrypted/decrypted private key */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -625,8 +606,40 @@ export function PlantPotDetail() {
             </Card>
           </div>
 
-          {/* Sidebar - keep empty for future use */}
+          {/* Weather Section */}
           <div className="space-y-6">
+            {weatherReading && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Environment</CardTitle>
+                  <CardDescription>
+                    Current conditions from weather station
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-orange-50 dark:bg-orange-950/30 border border-orange-200/50 dark:border-orange-800/30">
+                      <Thermometer className="h-5 w-5 text-orange-500/80" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Temperature</p>
+                        <p className="text-lg font-semibold text-orange-600 dark:text-orange-400">
+                          {getTemperature(weatherReading)}°C
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200/50 dark:border-blue-800/30">
+                      <Droplets className="h-5 w-5 text-blue-500/80" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Humidity</p>
+                        <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                          {getHumidity(weatherReading)}%
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>
