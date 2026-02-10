@@ -357,8 +357,8 @@ export function PlantPotDetail() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Plant Pot Info */}
-          <div className="lg:col-span-2 space-y-6">
+          {/* Plant Pot Config */}
+          <div className="space-y-6">
             <Card className="border-2 border-green-200 dark:border-green-800">
               <CardHeader>
                 <div className="flex items-center gap-3 mb-4">
@@ -515,40 +515,49 @@ export function PlantPotDetail() {
                   </div>
                 </div>
               </CardHeader>
+            </Card>
+          </div>
+
+          {/* Tasks Section */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Pending Tasks</CardTitle>
+                <CardDescription>
+                  Tasks queued for IoT device
+                </CardDescription>
+              </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium mb-3">Pending Tasks</h3>
-                  {tasks.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No pending tasks</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {tasks.map((task, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center justify-between p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Droplet className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                            <div>
-                              <p className="font-medium capitalize">{task.type}</p>
-                              <p className="text-xs text-muted-foreground">
-                                Duration: {formatDuration(parseInt(task.seconds))}
-                              </p>
-                            </div>
+                {tasks.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No pending tasks</p>
+                ) : (
+                  <div className="space-y-2">
+                    {tasks.map((task, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Droplet className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                          <div>
+                            <p className="font-medium capitalize">{task.type}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Duration: {formatDuration(parseInt(task.seconds))}
+                            </p>
                           </div>
-                          <Badge>Pending</Badge>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="pt-4">
+                        <Badge>Pending</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="pt-2">
                   <AddWaterTaskDialog plantPotIdentifier={identifier!} />
                 </div>
               </CardContent>
             </Card>
 
-            {/* Logs Section */}
+            {/* Activity Logs */}
             <Card>
               <CardHeader>
                 <CardTitle>Activity Logs</CardTitle>
@@ -606,32 +615,32 @@ export function PlantPotDetail() {
             </Card>
           </div>
 
-          {/* Weather Section */}
+          {/* Environment & Activity */}
           <div className="space-y-6">
             {weatherReading && (
               <Card>
                 <CardHeader>
                   <CardTitle>Environment</CardTitle>
                   <CardDescription>
-                    Current conditions from weather station
+                    Current conditions
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-orange-50 dark:bg-orange-950/30 border border-orange-200/50 dark:border-orange-800/30">
-                      <Thermometer className="h-5 w-5 text-orange-500/80" />
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-orange-50/50 dark:bg-orange-950/20 border border-orange-200/30 dark:border-orange-800/20">
+                      <Thermometer className="h-4 w-4 text-orange-500/60" />
                       <div>
                         <p className="text-xs text-muted-foreground">Temperature</p>
-                        <p className="text-lg font-semibold text-orange-600 dark:text-orange-400">
+                        <p className="text-base font-semibold text-orange-600/80 dark:text-orange-400/80">
                           {getTemperature(weatherReading)}°C
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200/50 dark:border-blue-800/30">
-                      <Droplets className="h-5 w-5 text-blue-500/80" />
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/30 dark:border-blue-800/20">
+                      <Droplets className="h-4 w-4 text-blue-500/60" />
                       <div>
                         <p className="text-xs text-muted-foreground">Humidity</p>
-                        <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                        <p className="text-base font-semibold text-blue-600/80 dark:text-blue-400/80">
                           {getHumidity(weatherReading)}%
                         </p>
                       </div>
