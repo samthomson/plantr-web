@@ -1,7 +1,8 @@
 import { useParams, Link } from 'react-router-dom';
 import { usePlantPot } from '@/hooks/usePlantPots';
 import { usePlantLogs } from '@/hooks/usePlantLogs';
-import { useWeatherStations, useWeatherReadings, getTemperature, getHumidity } from '@/hooks/useWeatherStations';
+import { useWeatherReadings, getTemperature, getHumidity } from '@/hooks/useWeatherStations';
+import { WeatherStationSelect } from '@/components/WeatherStationSelect';
 import { useNostr } from '@nostrify/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,6 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AddWaterTaskDialog } from '@/components/AddWaterTaskDialog';
 import { ConnectionStatus } from '@/components/ConnectionStatus';
 import { useToast } from '@/hooks/useToast';
@@ -40,7 +40,6 @@ export function PlantPotDetail() {
   const { identifier } = useParams<{ identifier: string }>();
   const { data: plantPot, isLoading: isPotLoading, refetch: refetchPot } = usePlantPot(identifier);
   const { data: logs, isLoading: isLogsLoading, refetch: refetchLogs } = usePlantLogs(plantPot?.pubkey, identifier);
-  const { data: weatherStations } = useWeatherStations();
   const weatherStationPubkey = plantPot?.tags.find(([t]) => t === 'weather_station')?.[1];
   const { data: weatherReading } = useWeatherReadings(weatherStationPubkey);
   const { toast } = useToast();
@@ -467,28 +466,10 @@ export function PlantPotDetail() {
                   </div>
 
                   {/* Weather Station Selection */}
-                  <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">Weather Station (Optional)</Label>
-                    <Select
-                      value={weatherStationPubkey || 'none'}
-                      onValueChange={handleWeatherStationChange}
-                    >
-                      <SelectTrigger className="h-9 text-xs">
-                        <SelectValue placeholder="Select weather station..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        {weatherStations?.map((station) => {
-                          const stationName = station.tags.find(([t]) => t === 'name')?.[1] || 'Unknown Station';
-                          return (
-                            <SelectItem key={station.pubkey} value={station.pubkey}>
-                              {stationName}
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <WeatherStationSelect
+                    value={weatherStationPubkey}
+                    onChange={handleWeatherStationChange}
+                  />
 
                   {/* Weather Data Display */}
                   {weatherReading && (
