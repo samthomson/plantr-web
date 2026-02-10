@@ -97,17 +97,18 @@ function PlantPotCard({ pot, onDelete, deletingId }: { pot: any; onDelete: (e: R
               </p>
             )}
 
-            {/* Weather data - subtle at bottom */}
+            {/* Environment conditions */}
             {weatherReading && (
-              <div className="pt-4 mt-auto">
-                <div className="flex items-center gap-3 text-xs text-muted-foreground/60">
-                  <div className="flex items-center gap-1">
-                    <Thermometer className="h-3 w-3" />
-                    <span>{getTemperature(weatherReading)}°</span>
+              <div className={recentLogs.length > 0 ? 'pt-3 mt-2' : 'pt-3 border-t'}>
+                <p className="text-xs font-medium text-muted-foreground mb-2">Environment</p>
+                <div className="flex items-center gap-3 text-xs">
+                  <div className="flex items-center gap-1.5 text-orange-500/70 dark:text-orange-400/70">
+                    <Thermometer className="h-3.5 w-3.5" />
+                    <span className="font-medium">{getTemperature(weatherReading)}°C</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Droplets className="h-3 w-3" />
-                    <span>{getHumidity(weatherReading)}%</span>
+                  <div className="flex items-center gap-1.5 text-blue-500/70 dark:text-blue-400/70">
+                    <Droplets className="h-3.5 w-3.5" />
+                    <span className="font-medium">{getHumidity(weatherReading)}%</span>
                   </div>
                 </div>
               </div>
