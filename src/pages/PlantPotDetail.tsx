@@ -356,10 +356,9 @@ export function PlantPotDetail() {
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="max-w-4xl mx-auto space-y-6">
           {/* Plant Pot Config */}
-          <div className="space-y-6">
-            <Card className="border-2 border-green-200 dark:border-green-800">
+          <Card className="border-2 border-green-200 dark:border-green-800">
               <CardHeader>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-3 rounded-full bg-green-100 dark:bg-green-900">
@@ -467,12 +466,6 @@ export function PlantPotDetail() {
                     />
                   </div>
 
-                  {/* Weather Station Selection */}
-                  <WeatherStationSelect
-                    value={weatherStationPubkey}
-                    onChange={handleWeatherStationChange}
-                  />
-
                   {/* Display encrypted/decrypted private key */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -557,99 +550,135 @@ export function PlantPotDetail() {
               </CardContent>
             </Card>
 
-            {/* Activity Logs */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Activity Logs</CardTitle>
-                <CardDescription>
-                  Recent watering activities from your IoT device
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLogsLoading ? (
-                  <div className="space-y-3">
-                    {[...Array(3)].map((_, i) => (
-                      <Skeleton key={i} className="h-16 w-full" />
-                    ))}
-                  </div>
-                ) : !logs || logs.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                    <p className="text-muted-foreground">
-                      No activity logs yet. Tasks will appear here after completion.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {logs.map((log) => {
-                      const logTasks = extractTasks(log);
-                      return (
-                        <div
-                          key={log.id}
-                          className="p-4 rounded-lg border bg-card hover:shadow-md transition-shadow"
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <CheckCheck className="h-5 w-5 text-green-600" />
-                              <span className="font-medium">Task Completed</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <Clock className="h-3 w-3" />
-                              {formatRelativeTime(log.created_at)}
-                            </div>
-                          </div>
-                          <div className="space-y-1 ml-7">
-                            {logTasks.map((task, idx) => (
-                              <p key={idx} className="text-sm text-muted-foreground">
-                                <span className="capitalize">{task.type}</span> for{' '}
-                                {formatDuration(parseInt(task.seconds))}
-                              </p>
-                            ))}
-                          </div>
+          {/* Tasks */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Pending Tasks</CardTitle>
+              <CardDescription>
+                Tasks queued for IoT device
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {tasks.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No pending tasks</p>
+              ) : (
+                <div className="space-y-2">
+                  {tasks.map((task, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Droplet className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        <div>
+                          <p className="font-medium capitalize">{task.type}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Duration: {formatDuration(parseInt(task.seconds))}
+                          </p>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                      </div>
+                      <Badge>Pending</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="pt-2">
+                <AddWaterTaskDialog plantPotIdentifier={identifier!} />
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Environment & Activity */}
-          <div className="space-y-6">
-            {weatherReading && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Environment</CardTitle>
-                  <CardDescription>
-                    Current conditions
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-orange-50/50 dark:bg-orange-950/20 border border-orange-200/30 dark:border-orange-800/20">
-                      <Thermometer className="h-4 w-4 text-orange-500/60" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Temperature</p>
-                        <p className="text-base font-semibold text-orange-600/80 dark:text-orange-400/80">
-                          {getTemperature(weatherReading)}°C
-                        </p>
+          {/* Activity Logs */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Activity Logs</CardTitle>
+              <CardDescription>
+                Recent watering activities
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLogsLoading ? (
+                <div className="text-center py-4">
+                  <p className="text-sm text-muted-foreground">Loading...</p>
+                </div>
+              ) : !logs || logs.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No activity yet
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {logs.map((log) => {
+                    const logTasks = extractTasks(log);
+                    return (
+                      <div
+                        key={log.id}
+                        className="p-3 rounded-lg border bg-card"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <CheckCheck className="h-4 w-4 text-green-600" />
+                            <span className="text-sm font-medium">Completed</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {formatRelativeTime(log.created_at)}
+                          </span>
+                        </div>
+                        <div className="ml-6">
+                          {logTasks.map((task, idx) => (
+                            <p key={idx} className="text-sm text-muted-foreground">
+                              <span className="capitalize">{task.type}</span> for{' '}
+                              {formatDuration(parseInt(task.seconds))}
+                            </p>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/30 dark:border-blue-800/20">
-                      <Droplets className="h-4 w-4 text-blue-500/60" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Humidity</p>
-                        <p className="text-base font-semibold text-blue-600/80 dark:text-blue-400/80">
-                          {getHumidity(weatherReading)}%
-                        </p>
-                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Environment */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Environment</CardTitle>
+              <CardDescription>
+                Weather station and current conditions
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Weather Station Selection */}
+              <WeatherStationSelect
+                value={weatherStationPubkey}
+                onChange={handleWeatherStationChange}
+              />
+
+              {/* Current Conditions */}
+              {weatherReading && (
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-orange-50/50 dark:bg-orange-950/20 border border-orange-200/30 dark:border-orange-800/20">
+                    <Thermometer className="h-4 w-4 text-orange-500/60" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Temperature</p>
+                      <p className="text-base font-semibold text-orange-600/80 dark:text-orange-400/80">
+                        {getTemperature(weatherReading)}°C
+                      </p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/30 dark:border-blue-800/20">
+                    <Droplets className="h-4 w-4 text-blue-500/60" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Humidity</p>
+                      <p className="text-base font-semibold text-blue-600/80 dark:text-blue-400/80">
+                        {getHumidity(weatherReading)}%
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
