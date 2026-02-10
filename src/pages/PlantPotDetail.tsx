@@ -509,46 +509,6 @@ export function PlantPotDetail() {
                 </div>
               </CardHeader>
             </Card>
-          </div>
-
-          {/* Tasks Section */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Pending Tasks</CardTitle>
-                <CardDescription>
-                  Tasks queued for IoT device
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {tasks.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">No pending tasks</p>
-                ) : (
-                  <div className="space-y-2">
-                    {tasks.map((task, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Droplet className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                          <div>
-                            <p className="font-medium capitalize">{task.type}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Duration: {formatDuration(parseInt(task.seconds))}
-                            </p>
-                          </div>
-                        </div>
-                        <Badge>Pending</Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div className="pt-2">
-                  <AddWaterTaskDialog plantPotIdentifier={identifier!} />
-                </div>
-              </CardContent>
-            </Card>
 
           {/* Tasks */}
           <Card>
