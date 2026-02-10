@@ -1,15 +1,101 @@
 import { Link } from 'react-router-dom';
 import { usePlantPots } from '@/hooks/usePlantPots';
+import { usePlantLogs } from '@/hooks/usePlantLogs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { extractTasks, formatDuration } from '@/lib/plantUtils';
-import { Sprout, Trash2 } from 'lucide-react';
+import { extractTasks, formatDuration, formatRelativeTime } from '@/lib/plantUtils';
+import { Sprout, Trash2, CheckCheck } from 'lucide-react';
 import { useNostr } from '@nostrify/react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useToast } from '@/hooks/useToast';
 import { useState } from 'react';
+
+function PlantPotCard({ pot, onDelete, deletingId }: { pot: any; onDelete: (e: React.MouseEvent, pot: any) => void; deletingId: string | null }) {
+  const identifier = pot.tags.find(([name]: string[]) => name === 'd')?.[1] || 'unknown';
+  const name = pot.tags.find(([name]: string[]) => name === 'name')?.[1] || identifier;
+  const tasks = extractTasks(pot);
+  const { data: logs } = usePlantLogs(pot.pubkey, identifier);
+  const recentLogs = logs?.slice(0, 2) || [];
+
+  return (
+    <div className="relative">
+      <Link to={`/pot/${identifier}`}>
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sprout className="h-5 w-5 text-green-600" />
+                <CardTitle className="text-lg">{name}</CardTitle>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => onDelete(e, pot)}
+                disabled={deletingId === pot.id}
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+            <CardDescription>
+              {tasks.length > 0 ? `${tasks.length} pending task${tasks.length !== 1 ? 's' : ''}` : 'No pending tasks'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Pending tasks */}
+            {tasks.length > 0 && (
+              <div className="space-y-2 mb-3">
+                {tasks.map((task, idx) => (
+                  <div key={idx} className="flex items-center justify-between">
+                    <Badge variant="secondary" className="capitalize">
+                      {task.type}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {formatDuration(parseInt(task.seconds))}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Recent activity logs */}
+            {recentLogs.length > 0 && (
+              <div className="space-y-2 pt-3 border-t">
+                <p className="text-xs font-medium text-muted-foreground mb-2">Recent Activity</p>
+                {recentLogs.map((log) => {
+                  const logTasks = extractTasks(log);
+                  return (
+                    <div key={log.id} className="flex items-start gap-2 text-xs">
+                      <CheckCheck className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        {logTasks.map((task, idx) => (
+                          <div key={idx} className="text-muted-foreground">
+                            <span className="capitalize">{task.type}</span> {formatDuration(parseInt(task.seconds))}
+                          </div>
+                        ))}
+                        <div className="text-muted-foreground/70 mt-0.5">
+                          {formatRelativeTime(log.created_at)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {tasks.length === 0 && recentLogs.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No activity yet
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </Link>
+    </div>
+  );
+}
 
 export function PlantPotList() {
   const { data: plantPots, isLoading } = usePlantPots();
@@ -93,54 +179,7 @@ export function PlantPotList() {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {plantPots.map((pot) => {
-        const identifier = pot.tags.find(([name]) => name === 'd')?.[1] || 'unknown';
-        const name = pot.tags.find(([name]) => name === 'name')?.[1] || identifier;
-        const tasks = extractTasks(pot);
-
-        return (
-          <div key={pot.id} className="relative">
-            <Link to={`/pot/${identifier}`}>
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Sprout className="h-5 w-5 text-green-600" />
-                      <CardTitle className="text-lg">{name}</CardTitle>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => handleDelete(e, pot)}
-                      disabled={deletingId === pot.id}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <CardDescription>
-                    {tasks.length > 0 ? `${tasks.length} pending task${tasks.length !== 1 ? 's' : ''}` : 'No tasks'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {tasks.map((task, idx) => (
-                      <div key={idx} className="flex items-center justify-between">
-                        <Badge variant="secondary" className="capitalize">
-                          {task.type}
-                        </Badge>
-                        <span className="text-sm text-muted-foreground">
-                          {formatDuration(parseInt(task.seconds))}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          </div>
-        );
-      })}
+      {plantPots.map((pot) => <PlantPotCard key={pot.id} pot={pot} onDelete={handleDelete} deletingId={deletingId} />)}
     </div>
   );
 }
