@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { extractTasks, formatDuration, formatRelativeTime } from '@/lib/plantUtils';
-import { Sprout, Trash2, CheckCheck } from 'lucide-react';
+import { useWeatherReadings, getTemperature, getHumidity } from '@/hooks/useWeatherStations';
+import { Sprout, Trash2, CheckCheck, Thermometer, Droplets } from 'lucide-react';
 import { useNostr } from '@nostrify/react';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useToast } from '@/hooks/useToast';
@@ -18,6 +19,9 @@ function PlantPotCard({ pot, onDelete, deletingId }: { pot: any; onDelete: (e: R
   const tasks = extractTasks(pot);
   const { data: logs } = usePlantLogs(pot.pubkey, identifier);
   const recentLogs = logs?.slice(0, 2) || [];
+  
+  const weatherStationPubkey = pot.tags.find(([t]: string[]) => t === 'weather_station')?.[1];
+  const { data: weatherReading } = useWeatherReadings(weatherStationPubkey);
 
   return (
     <div className="relative">
@@ -87,10 +91,24 @@ function PlantPotCard({ pot, onDelete, deletingId }: { pot: any; onDelete: (e: R
               </div>
             )}
 
-            {tasks.length === 0 && recentLogs.length === 0 && (
+            {tasks.length === 0 && recentLogs.length === 0 && !weatherReading && (
               <p className="text-sm text-muted-foreground text-center py-4">
                 No activity yet
               </p>
+            )}
+
+            {/* Weather data */}
+            {weatherReading && (
+              <div className="pt-3 border-t flex items-center gap-3 text-xs">
+                <div className="flex items-center gap-1">
+                  <Thermometer className="h-3 w-3 text-orange-500" />
+                  <span className="font-medium">{getTemperature(weatherReading)}°C</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Droplets className="h-3 w-3 text-blue-500" />
+                  <span className="font-medium">{getHumidity(weatherReading)}%</span>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>

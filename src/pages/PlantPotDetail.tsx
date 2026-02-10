@@ -1,6 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { usePlantPot } from '@/hooks/usePlantPots';
 import { usePlantLogs } from '@/hooks/usePlantLogs';
+import { useWeatherStations, useWeatherReadings, getTemperature, getHumidity } from '@/hooks/useWeatherStations';
 import { useNostr } from '@nostrify/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AddWaterTaskDialog } from '@/components/AddWaterTaskDialog';
 import { ConnectionStatus } from '@/components/ConnectionStatus';
 import { useToast } from '@/hooks/useToast';
@@ -38,6 +40,9 @@ export function PlantPotDetail() {
   const { identifier } = useParams<{ identifier: string }>();
   const { data: plantPot, isLoading: isPotLoading, refetch: refetchPot } = usePlantPot(identifier);
   const { data: logs, isLoading: isLogsLoading, refetch: refetchLogs } = usePlantLogs(plantPot?.pubkey, identifier);
+  const { data: weatherStations } = useWeatherStations();
+  const weatherStationPubkey = plantPot?.tags.find(([t]) => t === 'weather_station')?.[1];
+  const { data: weatherReading } = useWeatherReadings(weatherStationPubkey);
   const { toast } = useToast();
   const { user } = useCurrentUser();
   const { nostr } = useNostr();
@@ -199,6 +204,53 @@ export function PlantPotDetail() {
       toast({
         title: 'Error',
         description: 'Failed to update name',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleWeatherStationChange = async (stationPubkey: string) => {
+    if (!plantPot || !user?.signer) return;
+
+    try {
+      const decryptedKey = await user.signer.nip44.decrypt(user.pubkey, plantPot.content);
+      const hexKey = /^[0-9a-fA-F]{64}$/.test(decryptedKey) ? decryptedKey : '';
+      
+      if (!hexKey) return;
+
+      const secretKey = new Uint8Array(hexKey.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
+      const { NSecSigner } = await import('@nostrify/nostrify');
+      const signer = new NSecSigner(secretKey);
+
+      // Update tags with weather station
+      const updatedTags = plantPot.tags.filter(([t]) => t !== 'weather_station');
+      if (stationPubkey !== 'none') {
+        updatedTags.push(['weather_station', stationPubkey]);
+      }
+
+      const unsignedEvent = {
+        kind: 34419,
+        content: plantPot.content,
+        tags: updatedTags,
+        created_at: Math.floor(Date.now() / 1000),
+        pubkey: plantPot.pubkey,
+      };
+
+      const signedEvent = await signer.signEvent(unsignedEvent);
+      const relay = nostr.relay('wss://relay.samt.st');
+      await relay.event(signedEvent, { pow: 0 });
+
+      queryClient.invalidateQueries({ queryKey: ['plant-pot', user.pubkey, identifier] });
+      queryClient.invalidateQueries({ queryKey: ['plant-pots', user.pubkey] });
+
+      toast({
+        title: 'Updated',
+        description: 'Weather station updated',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update weather station',
         variant: 'destructive',
       });
     }
@@ -413,6 +465,51 @@ export function PlantPotDetail() {
                       className="font-mono text-xs h-9"
                     />
                   </div>
+
+                  {/* Weather Station Selection */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Weather Station (Optional)</Label>
+                    <Select
+                      value={weatherStationPubkey || 'none'}
+                      onValueChange={handleWeatherStationChange}
+                    >
+                      <SelectTrigger className="h-9 text-xs">
+                        <SelectValue placeholder="Select weather station..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {weatherStations?.map((station) => {
+                          const stationName = station.tags.find(([t]) => t === 'name')?.[1] || 'Unknown Station';
+                          return (
+                            <SelectItem key={station.pubkey} value={station.pubkey}>
+                              {stationName}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Weather Data Display */}
+                  {weatherReading && (
+                    <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 space-y-1">
+                      <p className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-2">Current Conditions</p>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        {getTemperature(weatherReading) && (
+                          <div>
+                            <span className="text-muted-foreground">Temp:</span>{' '}
+                            <span className="font-medium">{getTemperature(weatherReading)}°C</span>
+                          </div>
+                        )}
+                        {getHumidity(weatherReading) && (
+                          <div>
+                            <span className="text-muted-foreground">Humidity:</span>{' '}
+                            <span className="font-medium">{getHumidity(weatherReading)}%</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Display encrypted/decrypted private key */}
                   <div className="space-y-2">
